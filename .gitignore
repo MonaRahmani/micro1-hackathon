@@ -1,0 +1,47 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.next/
+.cache/
+
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ---- Secrets ----
+.env
+.env.*
+!.env.example
+*.key
+
+# ---- Hackathon: raw trajectory logs (keep rendered .md versions) ----
+trajectories/*.jsonl
+trajectories/**/*.jsonl
+
+# ---- Eval outputs (optional: comment out to commit results) ----
+# evals/results/
