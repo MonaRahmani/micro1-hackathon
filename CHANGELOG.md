@@ -19,6 +19,65 @@ Each entry is one meaningful change. Newest at the top, under "The arc".
 Every entry must be evidence-based: no "felt faster", only measured results.
 -->
 
+## v0.5 — "A rerun of the untouched baseline scores 6/6, which puts v0.4's headline in doubt"
+
+**What I saw (evidence):**
+This repo had never been run against its own environment — every result so far
+was produced with `/Users/ada/micro1_projects/agenteval/.venv`, a different
+project's virtualenv. Fixing that meant re-running the baseline to prove the new
+environment works. That rerun is the finding.
+
+**What I changed:**
+- Created `.venv` inside this repo on **Python 3.10.0** and pinned
+  `requirements.txt` to the versions actually in use: `anthropic==1.2.0`,
+  `python-dotenv==1.2.3` (transitives `httpx2==2.12.0`, `pydantic==2.13.5`
+  recorded as comments).
+- Replaced the `REPRODUCE.md` placeholder with the real setup, commands,
+  expected output, measured runtime, and measured cost.
+- **No change to `baseline/`, `solution/`, `evals/`, or any prompt.** The code
+  that produced the run below is byte-identical to v0.4's.
+
+**What happened (measured result):**
+The full baseline, unchanged, run under the new environment
+(`evals/results/2026-08-29T04-36-10_baseline.json`) scored **6/6**, not the 5/6
+in `evals/results/2026-08-29T01-51-01_baseline.json`. The incident that moved is
+**incident_03** — the exact case v0.4 used as its headline evidence. This time
+the baseline got it right, and the judge's reason shows it found the same pair
+the solution's verify stage does:
+
+> Both identify the same underlying cause: PR #881's timeout mismatch (30s
+> gateway vs 10s load balancer) combined with disabled circuit breaker allowed
+> gateway threads to block longer than the load balancer would wait...
+
+| baseline run | root cause | evidence recall |
+| ------------ | ---------- | --------------- |
+| 2026-08-29T01:51:01 (v0.3/v0.4) | 5/6 | 83% |
+| 2026-08-29T04:36:10 (this) | **6/6** | **78%** |
+
+Per-incident, correctness moved only on incident_03 (False -> True), but
+evidence recall moved on three others (02: 1.00 -> 0.67, 05: 1.00 -> 0.75, 03:
+0.50 -> 0.75). So the variance is not confined to one borderline case.
+
+**What this means for v0.4.** v0.4's headline was "solution 6/6 vs baseline
+5/6", built on incident_03 being a baseline failure the pipeline fixed. On this
+evidence that gap is **not established**: the baseline scores 6/6 too when
+re-run, and n=1 per configuration cannot separate a real improvement from
+sampling noise. What v0.4 measured that still stands is the evidence recall gap
+(baseline 78-83% across two runs vs. solution 92%) and the latency/cost profile
+(1 call and ~10.6s vs. 7 calls and ~126s). The root-cause accuracy claim does
+not stand on one run per side, and the v0.4 entry should be read with this one.
+
+**Next question:**
+How many runs are needed to say anything about root-cause accuracy at all? With
+6 incidents and a binary outcome per incident, single runs cannot distinguish
+5/6 from 6/6. The cheap experiment is 5 baseline runs and 5 solution runs on
+incident_03 alone (~$0.10 and ~$1.50 respectively) to get a pass rate per
+approach rather than a single verdict. Until that exists, the defensible claim
+for this project is the evidence-recall and citation-quality gap, not "the
+pipeline is more accurate."
+
+---
+
 ## v0.4 — "6/6, and an honest look at what actually moved"
 
 **What I saw (evidence):**

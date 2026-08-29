@@ -1,2 +1,9 @@
-anthropic
-python-dotenv
+# Pinned to the versions this project was actually developed and measured
+# against. See REPRODUCE.md for the Python version and setup steps.
+anthropic==1.2.0
+python-dotenv==1.2.3
+
+# Resolved transitively by the two pins above, recorded here for reference —
+# these are the versions the runs in evals/results/ were produced with:
+#   httpx2==2.12.0
+#   pydantic==2.13.5
