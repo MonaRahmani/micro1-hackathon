@@ -1,0 +1,44 @@
+commit b91f0c74  "cache recommendation responses + move to httpx (PR #2208)"
+Author: dev-team
+Date:   2026-08-21T07:44:00Z
+
+--- a/recommend/service.py
++++ b/recommend/service.py
+@@ -1,12 +1,17 @@
+-import requests
++import httpx                                  # NOISE: httpx_migration
+ from recommend.model import rank
+
++# per-process cache of rendered recommendation payloads
++_RESPONSE_CACHE: dict[str, list[dict]] = {}   # EVIDENCE: unbounded_cache_growth
++
+ class RecommendService:
+     def __init__(self, feature_store_url: str) -> None:
+         self.feature_store_url = feature_store_url
+-        self.client = requests.Session()
++        self.client = httpx.Client(timeout=2.0, transport=httpx.HTTPTransport(retries=3))  # NOISE: httpx_migration
+
+@@ -28,9 +33,14 @@ class RecommendService:
+     def recommend(self, request_id: str, user_id: str) -> list[dict]:
++        if request_id in _RESPONSE_CACHE:
++            return _RESPONSE_CACHE[request_id]
+         features = self._fetch_features(user_id)
+         payload = rank(features)
++        # keyed by request_id, so every request inserts a new entry and
++        # nothing is ever evicted or expired
++        _RESPONSE_CACHE[request_id] = payload    # EVIDENCE: unbounded_cache_growth
+         return payload
+
+@@ -44,7 +54,7 @@ class RecommendService:
+     def _fetch_features(self, user_id: str) -> dict:
+-        resp = self.client.get(f"{self.feature_store_url}/features/{user_id}", timeout=2.0)
++        resp = self.client.get(f"{self.feature_store_url}/features/{user_id}")  # NOISE: httpx_migration
+         resp.raise_for_status()
+         return resp.json()
+
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -3,5 +3,5 @@
+-requests==2.32.3
++httpx==0.27.2                                  # NOISE: httpx_migration
+ pydantic==2.9.2

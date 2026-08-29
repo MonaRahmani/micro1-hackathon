@@ -1,0 +1,45 @@
+commit 0c88fe41  "make catalog cache TTL predictable (PR #5540)"
+Author: dev-team
+Date:   2026-08-27T05:31:00Z
+
+--- a/catalog/cache.py
++++ b/catalog/cache.py
+@@ -1,20 +1,14 @@
+-import random
+ from catalog.redis import redis
+
+ TTL_SECONDS = 300
+-TTL_JITTER_SECONDS = 60
+-
+-def _ttl() -> int:
+-    # spread expiry over a 2-minute band so keys never expire together
+-    return TTL_SECONDS + random.randint(-TTL_JITTER_SECONDS, TTL_JITTER_SECONDS)
++def _ttl() -> int:
++    return TTL_SECONDS                       # EVIDENCE: ttl_jitter_removed
+
+@@ -24,18 +18,10 @@ def get_product(product_id: str) -> dict:
+     cached = redis.get(f"product:{product_id}")
+     if cached is not None:
+         return json.loads(cached)
+-
+-    # single-flight: only one caller per key refills, the rest wait on it
+-    with singleflight.lock(f"product:{product_id}"):
+-        cached = redis.get(f"product:{product_id}")
+-        if cached is not None:
+-            return json.loads(cached)
+-        row = db.fetch_product(product_id)
+-        redis.setex(f"product:{product_id}", _ttl(), json.dumps(row))
+-        return row
++    # every caller that misses now goes straight to the database
++    row = db.fetch_product(product_id)       # EVIDENCE: cache_stampede
++    redis.setex(f"product:{product_id}", _ttl(), json.dumps(row))
++    return row
+
+--- a/deploy/catalog-service/values.yaml
++++ b/deploy/catalog-service/values.yaml
+@@ -12,6 +12,7 @@ env:
+   CACHE_TTL_SECONDS: "300"
+-  CACHE_TTL_JITTER_SECONDS: "60"
++  CACHE_TTL_JITTER_SECONDS: "0"            # EVIDENCE: ttl_jitter_removed
++  CACHE_FLUSH_ON_DEPLOY: "true"            # EVIDENCE: synchronized_expiry
+   REPLICAS: "8"

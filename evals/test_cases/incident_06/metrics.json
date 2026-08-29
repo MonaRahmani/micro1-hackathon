@@ -1,0 +1,52 @@
+{
+  "service": "catalog-service",
+  "window": "2026-08-27T05:30:00Z..2026-08-27T06:30:00Z",
+  "deploy_at": "2026-08-27T06:00:00Z",
+  "series": [
+    {
+      "metric": "db_queries_per_sec",
+      "before_deploy": 182,
+      "after_deploy_baseline": 185,
+      "after_deploy_peaks": [3240, 3310, 3388, 3402, 3355],
+      "peak_timestamps": ["06:05:00Z", "06:10:00Z", "06:15:00Z", "06:20:00Z", "06:25:00Z"],
+      "shape": "flat baseline with a 6s spike exactly every 300s",
+      "note": "EVIDENCE: db_qps_sawtooth"
+    },
+    {
+      "metric": "cache_hit_rate_pct",
+      "before_deploy": 97.9,
+      "after_deploy_baseline": 97.7,
+      "after_deploy_troughs": [4.1, 3.8, 4.0, 3.9, 4.2],
+      "note": "EVIDENCE: cache_stampede"
+    },
+    {
+      "metric": "cache_keys_expiring_per_1s_bucket_max",
+      "before_deploy": 214,
+      "after_deploy": 12910,
+      "note": "EVIDENCE: synchronized_expiry"
+    },
+    {
+      "metric": "cache_ttl_jitter_seconds",
+      "before_deploy": 60,
+      "after_deploy": 0,
+      "note": "EVIDENCE: ttl_jitter_removed"
+    },
+    {
+      "metric": "http_5xx_rate_pct",
+      "before_deploy": 0.01,
+      "after_deploy": 6.8,
+      "comment": "concentrated in 6s windows every 5 minutes"
+    },
+    {
+      "metric": "requests_per_second",
+      "before_deploy": 1838,
+      "after_deploy": 1841
+    },
+    {
+      "metric": "postgres_active_connections",
+      "capacity": 200,
+      "before_deploy": 44,
+      "after_deploy_peaks": [200, 200, 200]
+    }
+  ]
+}

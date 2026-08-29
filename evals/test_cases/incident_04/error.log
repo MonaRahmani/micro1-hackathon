@@ -1,0 +1,7 @@
+2026-08-25T02:09:14.120Z ERROR orders-service statement_timeout: canceling statement due to statement timeout (10000ms) — SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50
+2026-08-25T02:09:14.121Z ERROR orders-service EXPLAIN: Seq Scan on orders  (cost=0.00..1284401.00 rows=41200000 width=284)  Filter: (customer_id = $1)  # EVIDENCE: seq_scan_on_orders
+2026-08-25T02:11:02.005Z ERROR orders-service GET /v1/customers/88213/orders -> 500 (statement timeout)
+2026-08-25T02:17:45.903Z ERROR orders-service postgres db-prod-2: cpu 97%, 61 backends in state=active, load avg 58  # EVIDENCE: db_cpu_saturation
+2026-08-25T02:20:33.660Z ERROR orders-service psycopg.errors.QueryCanceled: canceling statement due to statement timeout (10000ms)
+2026-08-25T02:28:56.661Z ERROR orders-service SLO breach: p99 9.8s over 10m window  # EVIDENCE: query_p99_spike
+2026-08-25T02:31:19.447Z ERROR orders-service psycopg.errors.QueryCanceled: canceling statement due to statement timeout (10000ms)

@@ -1,0 +1,49 @@
+{
+  "service": "reco-service",
+  "window": "2026-08-21T07:30:00Z..2026-08-21T10:00:00Z",
+  "deploy_at": "2026-08-21T07:58:00Z",
+  "series": [
+    {
+      "metric": "container_rss_mb",
+      "samples_after_deploy": [412, 938, 1622, 2410, 3188, 3620, 412, 1010, 1980],
+      "sample_interval_minutes": 10,
+      "shape": "sawtooth: climbs monotonically until OOM, resets on restart",
+      "note": "EVIDENCE: rss_monotonic_increase"
+    },
+    {
+      "metric": "container_restarts_total",
+      "before_deploy": 0,
+      "after_deploy": 3,
+      "note": "EVIDENCE: oomkilled_restart"
+    },
+    {
+      "metric": "response_cache_entries",
+      "before_deploy": 0,
+      "after_deploy": 512044,
+      "evictions_total": 0,
+      "note": "EVIDENCE: unbounded_cache_growth"
+    },
+    {
+      "metric": "http_request_duration_p99_ms",
+      "before_deploy": 91,
+      "after_deploy": 88
+    },
+    {
+      "metric": "http_5xx_rate_pct",
+      "before_deploy": 0.01,
+      "after_deploy": 0.9,
+      "comment": "only during the ~15s restart windows"
+    },
+    {
+      "metric": "outbound_http_error_rate_pct_feature_store",
+      "before_deploy": 0.4,
+      "after_deploy": 0.5,
+      "comment": "httpx retries succeeded; no sustained change"
+    },
+    {
+      "metric": "requests_per_second",
+      "before_deploy": 47.2,
+      "after_deploy": 47.8
+    }
+  ]
+}

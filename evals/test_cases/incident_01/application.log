@@ -1,0 +1,24 @@
+2026-08-19T13:52:02.331Z INFO  checkout-api worker=1 GET  /api/v1/cart/9f21a2 200 in 38ms
+2026-08-19T13:54:14.902Z INFO  checkout-api worker=4 POST /api/v1/checkout 201 in 112ms
+2026-08-19T13:57:47.550Z INFO  checkout-api worker=2 GET  /api/v1/cart/1b7c40 200 in 41ms
+2026-08-19T14:00:09.744Z INFO  checkout-api db.pool checked_out=3 available=7 waiters=0
+2026-08-19T14:02:31.087Z INFO  checkout-api worker=6 POST /api/v1/checkout 201 in 98ms
+2026-08-19T14:05:00.012Z INFO  checkout-api deploy rollout started version=v2.14.0 prev=v2.13.4
+2026-08-19T14:05:38.774Z INFO  checkout-api worker pool resized concurrency=32 (was 8)  # EVIDENCE: worker_concurrency_raised
+2026-08-19T14:06:02.118Z INFO  checkout-api db.pool initialized size=10 max_overflow=0  # EVIDENCE: pool_size_unchanged
+2026-08-19T14:06:41.209Z INFO  checkout-api worker=17 POST /api/v1/checkout 201 in 890ms
+2026-08-19T14:07:12.663Z INFO  checkout-api worker=24 GET  /api/v1/cart/33ae91 200 in 1204ms
+2026-08-19T14:07:55.640Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=6
+2026-08-19T14:08:30.117Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=19  # EVIDENCE: pool_exhaustion
+2026-08-19T14:08:31.902Z INFO  checkout-api worker=29 POST /api/v1/checkout 201 in 8802ms
+2026-08-19T14:09:04.455Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=27
+2026-08-19T14:09:40.771Z INFO  checkout-api upstream inventory-svc GET /stock 200 in 44ms
+2026-08-19T14:10:02.339Z INFO  checkout-api upstream payments-svc POST /authorize 200 in 137ms
+2026-08-19T14:10:44.918Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=31
+2026-08-19T14:11:15.204Z INFO  checkout-api health /healthz 200 in 2ms
+2026-08-19T14:12:03.881Z WARN  checkout-api request queued waiting for db connection wait_ms=9412
+2026-08-19T14:13:38.550Z INFO  checkout-api worker=31 POST /api/v1/checkout 500 in 30011ms
+2026-08-19T14:15:22.117Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=44
+2026-08-19T14:17:09.660Z INFO  checkout-api postgres server reports max_connections=400 current_connections=61
+2026-08-19T14:19:51.283Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=52
+2026-08-19T14:22:30.004Z INFO  checkout-api oncall paged: checkout error rate > 5%

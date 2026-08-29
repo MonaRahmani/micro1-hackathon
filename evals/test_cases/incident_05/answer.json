@@ -1,0 +1,13 @@
+{
+  "incident_id": "incident_05",
+  "root_cause": "PR #3302 rewrote the outbound retry policy to 10 attempts with backoff_factor 0.0, stopped respecting Retry-After, and added 4xx statuses (429/400/401/404) to the retry list. Every 429 from sms-provider is retried immediately up to 10 times, amplifying a 500 req/s workload into 5140 req/s — a self-sustaining retry storm that pushed the provider to 96% 429s and then suspended the account.",
+  "evidence_tags": [
+    "retry_backoff_removed",
+    "retry_on_4xx",
+    "retry_storm",
+    "downstream_429_amplified"
+  ],
+  "has_red_herring": true,
+  "red_herring": "The same release upgraded kafka-python 2.8.1 -> 3.6.0 and renamed the consumer group notify-v1 -> notify-v2, producing two visible consumer-group rebalances. Those rebalances are expected on a group-id change, both finished with lag 0, and inbound message rate was flat — they did not cause the outage.",
+  "red_herring_tags": ["kafka_client_upgrade"]
+}

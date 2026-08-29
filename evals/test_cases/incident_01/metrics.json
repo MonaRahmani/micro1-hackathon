@@ -1,0 +1,51 @@
+{
+  "service": "checkout-api",
+  "window": "2026-08-19T13:30:00Z..2026-08-19T14:30:00Z",
+  "deploy_at": "2026-08-19T14:05:00Z",
+  "series": [
+    {
+      "metric": "http_request_duration_p99_ms",
+      "before_deploy": 184,
+      "after_deploy": 29800
+    },
+    {
+      "metric": "http_5xx_rate_pct",
+      "before_deploy": 0.02,
+      "after_deploy": 11.4
+    },
+    {
+      "metric": "db_pool_wait_seconds_p99",
+      "before_deploy": 0.004,
+      "after_deploy": 29.9,
+      "note": "EVIDENCE: db_wait_time_spike"
+    },
+    {
+      "metric": "db_pool_checked_out_connections",
+      "before_deploy": 3.1,
+      "after_deploy": 10.0,
+      "capacity": 10,
+      "note": "EVIDENCE: pool_exhaustion"
+    },
+    {
+      "metric": "postgres_server_active_connections",
+      "before_deploy": 58,
+      "after_deploy": 61,
+      "capacity": 400
+    },
+    {
+      "metric": "postgres_cpu_pct",
+      "before_deploy": 22,
+      "after_deploy": 19
+    },
+    {
+      "metric": "app_container_rss_mb",
+      "before_deploy": 610,
+      "after_deploy": 704
+    },
+    {
+      "metric": "app_cpu_pct",
+      "before_deploy": 31,
+      "after_deploy": 12
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "incident_id": "incident_02",
+  "root_cause": "The response cache added in v3.7.1 is an unbounded module-level dict keyed by request_id, so every request inserts a new entry that is never evicted or expired; resident memory grows monotonically until the container is OOMKilled and restarts.",
+  "evidence_tags": [
+    "unbounded_cache_growth",
+    "rss_monotonic_increase",
+    "oomkilled_restart"
+  ],
+  "has_red_herring": true,
+  "red_herring": "The same release also migrated the HTTP client from requests to httpx and produced a few httpx.ConnectError retry warnings. The migration is unrelated: the retries recovered, outbound error rate and latency were flat, and the heap dump names _RESPONSE_CACHE as the retainer.",
+  "red_herring_tags": ["httpx_migration"]
+}

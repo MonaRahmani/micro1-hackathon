@@ -1,0 +1,8 @@
+2026-08-26T11:15:44.551Z WARN  notify-service kafka: group notify-v2 is rebalancing, pausing fetch (expected on a new group id)  # NOISE: kafka_client_upgrade
+2026-08-26T11:22:45.662Z ERROR notify-service HTTPError 429 from sms-provider: {"error":"rate_limit_exceeded","limit_per_sec":500,"retry_after":30}  # EVIDENCE: downstream_429_amplified
+2026-08-26T11:22:45.663Z WARN  notify-service ignoring Retry-After: 30 (backoff_factor=0.0)  # EVIDENCE: retry_backoff_removed
+2026-08-26T11:23:02.772Z ERROR notify-service outbound queue saturated: 5140 req/s against a 500 req/s contract limit  # EVIDENCE: retry_storm
+2026-08-26T11:25:41.448Z ERROR notify-service HTTPError 401 from sms-provider: {"error":"invalid_token"} — will retry (401 is in retry_on list)  # EVIDENCE: retry_on_4xx
+2026-08-26T11:27:30.006Z ERROR notify-service every message now consumes 10 upstream attempts; effective amplification factor 10x  # EVIDENCE: retry_storm
+2026-08-26T11:29:14.661Z WARN  notify-service kafka: group notify-v2 is rebalancing, pausing fetch  # NOISE: kafka_client_upgrade
+2026-08-26T11:33:02.340Z ERROR notify-service HTTPError 403 from sms-provider: {"error":"account_suspended","reason":"sustained abuse of rate limit"}

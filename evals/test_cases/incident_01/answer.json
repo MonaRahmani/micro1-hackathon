@@ -1,0 +1,11 @@
+{
+  "incident_id": "incident_01",
+  "root_cause": "Deploy v2.14.0 raised WORKER_CONCURRENCY from 8 to 32 while leaving DB_POOL_SIZE at 10 with max_overflow 0, so 32 concurrent workers contend for 10 database connections and block in pool acquire until the 30s timeout, exhausting the connection pool.",
+  "evidence_tags": [
+    "worker_concurrency_raised",
+    "pool_size_unchanged",
+    "pool_exhaustion",
+    "db_wait_time_spike"
+  ],
+  "has_red_herring": false
+}

@@ -1,0 +1,11 @@
+{
+  "incident_id": "incident_04",
+  "root_cause": "Migration 0042 dropped idx_orders_customer_id, which served the hot-path query SELECT * FROM orders WHERE customer_id = $1 on a 41.2M-row table. Without it Postgres falls back to a sequential scan on every customer order-history request, saturating database CPU and blowing the latency SLO. The replacement partial index on status does not cover that query.",
+  "evidence_tags": [
+    "migration_dropped_index",
+    "seq_scan_on_orders",
+    "db_cpu_saturation",
+    "query_p99_spike"
+  ],
+  "has_red_herring": false
+}

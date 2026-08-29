@@ -1,0 +1,11 @@
+{
+  "incident_id": "incident_03",
+  "root_cause": "PR #881 raised the gateway's payments-svc read timeout from 3s to 30s (and disabled the circuit breaker) while the edge load balancer's proxy_read_timeout stayed at 10s. When partner latency rose, the edge cut clients off at 10s with 504s while gateway worker threads stayed pinned on the upstream call for the full 30s, saturating the 64-thread pool and taking down routes that never touch payments-svc.",
+  "evidence_tags": [
+    "client_timeout_raised",
+    "edge_timeout_unchanged",
+    "edge_504_surge",
+    "thread_pool_saturation"
+  ],
+  "has_red_herring": false
+}

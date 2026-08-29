@@ -1,0 +1,8 @@
+2026-08-21T08:02:44.118Z WARN  reco-service httpx.ConnectError: [Errno 111] Connection refused (feature-store), retrying  # NOISE: httpx_migration
+2026-08-21T08:19:20.004Z WARN  reco-service httpx.ConnectError: [Errno 111] Connection refused (feature-store), retrying  # NOISE: httpx_migration
+2026-08-21T08:38:02.444Z WARN  reco-service memory pressure: rss 3620Mi / limit 4096Mi, cgroup reclaim failing
+2026-08-21T08:39:47.770Z ERROR reco-service Container killed by OOM killer (exit 137), rss at kill = 4094Mi  # EVIDENCE: oomkilled_restart
+2026-08-21T08:39:47.772Z ERROR reco-service heap dump top retainer: dict at recommend.service._RESPONSE_CACHE, 3.41 GiB, 512044 entries  # EVIDENCE: unbounded_cache_growth
+2026-08-21T09:14:33.659Z ERROR reco-service Container killed by OOM killer (exit 137), rss at kill = 4093Mi
+2026-08-21T09:14:33.661Z ERROR reco-service heap dump top retainer: dict at recommend.service._RESPONSE_CACHE, 3.38 GiB, 508911 entries
+2026-08-21T09:48:21.549Z ERROR reco-service Container killed by OOM killer (exit 137), rss at kill = 4095Mi

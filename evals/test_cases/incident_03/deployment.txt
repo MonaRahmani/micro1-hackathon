@@ -1,0 +1,27 @@
+DEPLOYMENT RECORD
+=================
+service:       api-gateway
+version:       v9.2.0  (previous: v9.1.7)
+deployed_at:   2026-08-23T18:40:00Z
+deployed_by:   m.okafor (PR #881 "stop timing out slow payment authorizations")
+strategy:      blue/green, cut over at 18:40:00Z
+rollout ended: 2026-08-23T18:40:10Z
+
+CONFIG CHANGES IN THIS RELEASE
+  PAYMENTS_READ_TIMEOUT     3s  -> 30s     # EVIDENCE: client_timeout_raised
+  PAYMENTS_CONNECT_TIMEOUT  1s  -> 1s      (unchanged)
+  GATEWAY_WORKER_THREADS    64  -> 64      (unchanged)
+  PAYMENTS_CIRCUIT_BREAKER  enabled -> disabled  (breaker tripped too often at 3s)
+
+EDGE / INFRA (NOT part of this release)
+  alb-prod proxy_read_timeout = 10s   # EVIDENCE: edge_timeout_unchanged
+  alb-prod idle_timeout       = 60s
+  This value has been 10s since 2024 and was not touched by PR #881.
+
+DOWNSTREAM STATUS DURING INCIDENT
+  payments-svc: healthy. 5xx rate 0.03%, cpu 34%, no deploy since 2026-08-15.
+  Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner
+  degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s.
+
+PREVIOUS DEPLOY
+  v9.1.7 at 2026-08-15T10:05:00Z — no incident.

@@ -1,0 +1,29 @@
+commit d24c9a08  "index pending orders for the ops queue (PR #1157)"
+Author: dev-team
+Date:   2026-08-24T16:12:00Z
+
+--- /dev/null
++++ b/migrations/0042_backfill_order_status.sql
+@@ -0,0 +1,12 @@
++-- ops queue only ever filters on status = 'PENDING', so a partial index
++-- is enough. Dropping the old customer_id index to reduce write amplification.
++
++DROP INDEX IF EXISTS idx_orders_customer_id;          -- EVIDENCE: migration_dropped_index
++
++CREATE INDEX idx_orders_status_partial
++    ON orders (status)
++    WHERE status = 'PENDING';
++
++UPDATE orders SET status = 'PENDING' WHERE status IS NULL;
+
+--- a/orders/repository.py
++++ b/orders/repository.py
+@@ -30,7 +30,7 @@ class OrderRepository:
+     # hot path: called on every customer order-history request
+     ORDERS_BY_CUSTOMER = """
+         SELECT * FROM orders
+-        WHERE customer_id = $1          -- served by idx_orders_customer_id
++        WHERE customer_id = $1          -- EVIDENCE: seq_scan_on_orders (index no longer exists)
+         ORDER BY created_at DESC
+         LIMIT 50
+     """

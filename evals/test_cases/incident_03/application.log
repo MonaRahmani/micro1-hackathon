@@ -1,0 +1,17 @@
+2026-08-23T18:40:02.117Z INFO  api-gateway version=v9.2.0 boot threads=64
+2026-08-23T18:40:03.550Z INFO  api-gateway upstream payments-svc client configured connect=1s read=30s (was read=3s)  # EVIDENCE: client_timeout_raised
+2026-08-23T18:40:03.551Z INFO  api-gateway edge alb-prod proxy_read_timeout=10s (unchanged this release)  # EVIDENCE: edge_timeout_unchanged
+2026-08-23T18:42:19.004Z INFO  api-gateway GET  /v1/orders 200 in 61ms threads_busy=7
+2026-08-23T18:44:51.880Z INFO  api-gateway POST /v1/payments 200 in 2140ms threads_busy=11
+2026-08-23T18:47:30.660Z WARN  api-gateway upstream payments-svc slow: partner acquirer p99 climbed to 12.4s
+2026-08-23T18:48:05.221Z INFO  api-gateway POST /v1/payments 200 in 12380ms threads_busy=29
+2026-08-23T18:48:44.773Z WARN  api-gateway edge returned 504 to client while gateway thread still waiting on payments-svc  # EVIDENCE: edge_504_surge
+2026-08-23T18:49:12.005Z INFO  api-gateway POST /v1/payments (client gone) upstream still open for 29.9s  # EVIDENCE: client_timeout_raised
+2026-08-23T18:50:40.118Z WARN  api-gateway threads_busy=58/64 (91%)
+2026-08-23T18:51:33.902Z WARN  api-gateway threads_busy=64/64 (100%) accept queue depth=214  # EVIDENCE: thread_pool_saturation
+2026-08-23T18:52:10.447Z INFO  api-gateway GET  /v1/orders 504 in 10002ms  (endpoint does not touch payments-svc)
+2026-08-23T18:52:58.660Z INFO  api-gateway GET  /v1/catalog 504 in 10001ms  (endpoint does not touch payments-svc)
+2026-08-23T18:54:20.771Z WARN  api-gateway threads_busy=64/64 (100%) accept queue depth=611  # EVIDENCE: thread_pool_saturation
+2026-08-23T18:56:02.339Z INFO  api-gateway payments-svc itself: 5xx rate 0.03%, cpu 34%, healthy
+2026-08-23T18:58:44.118Z WARN  api-gateway edge alb-prod 504 count last 1m = 4180  # EVIDENCE: edge_504_surge
+2026-08-23T19:01:07.550Z INFO  api-gateway oncall paged: gateway availability < 90% across ALL routes

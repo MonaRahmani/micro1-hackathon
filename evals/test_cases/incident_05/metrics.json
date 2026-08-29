@@ -1,0 +1,53 @@
+{
+  "service": "notify-service",
+  "window": "2026-08-26T10:45:00Z..2026-08-26T11:40:00Z",
+  "deploy_at": "2026-08-26T11:15:00Z",
+  "series": [
+    {
+      "metric": "outbound_requests_per_sec_sms_provider",
+      "before_deploy": 512,
+      "after_deploy": 5140,
+      "contract_limit": 500,
+      "note": "EVIDENCE: retry_storm"
+    },
+    {
+      "metric": "sms_provider_429_rate_pct",
+      "before_deploy": 0.1,
+      "after_deploy": 96.0,
+      "note": "EVIDENCE: downstream_429_amplified"
+    },
+    {
+      "metric": "retry_attempts_per_message_mean",
+      "before_deploy": 1.02,
+      "after_deploy": 9.94,
+      "note": "EVIDENCE: retry_backoff_removed"
+    },
+    {
+      "metric": "retries_on_4xx_per_min",
+      "before_deploy": 0,
+      "after_deploy": 41200,
+      "note": "EVIDENCE: retry_on_4xx"
+    },
+    {
+      "metric": "egress_bandwidth_mbps",
+      "before_deploy": 61,
+      "after_deploy": 940
+    },
+    {
+      "metric": "kafka_consumer_lag_messages",
+      "before_deploy": 0,
+      "after_deploy": 0,
+      "comment": "two rebalances at 11:15Z and 11:29Z, both recovered to lag 0"
+    },
+    {
+      "metric": "kafka_inbound_messages_per_sec",
+      "before_deploy": 498,
+      "after_deploy": 503
+    },
+    {
+      "metric": "sms_delivered_per_min",
+      "before_deploy": 29800,
+      "after_deploy": 0
+    }
+  ]
+}

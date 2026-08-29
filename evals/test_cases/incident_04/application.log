@@ -1,0 +1,15 @@
+2026-08-25T02:00:00.114Z INFO  orders-service migration runner starting 0042_backfill_order_status
+2026-08-25T02:00:04.550Z INFO  orders-service applying: DROP INDEX idx_orders_customer_id  # EVIDENCE: migration_dropped_index
+2026-08-25T02:00:09.881Z INFO  orders-service applying: CREATE INDEX idx_orders_status_partial ON orders (status) WHERE status = 'PENDING'
+2026-08-25T02:01:47.220Z INFO  orders-service migration 0042 applied in 107s, 41.2M rows in orders
+2026-08-25T02:02:00.005Z INFO  orders-service resumed serving traffic
+2026-08-25T02:06:31.660Z INFO  orders-service GET /v1/customers/88213/orders 200 in 4180ms (was ~35ms)
+2026-08-25T02:09:14.118Z WARN  orders-service slow query 6.2s: SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50
+2026-08-25T02:09:14.119Z WARN  orders-service query plan: Seq Scan on orders (cost=0.00..1284401.00 rows=41200000)  # EVIDENCE: seq_scan_on_orders
+2026-08-25T02:13:02.771Z WARN  orders-service pg_stat_statements: orders_by_customer calls=18402 mean_time_ms=5910
+2026-08-25T02:17:45.902Z WARN  orders-service postgres db-prod-2 cpu=97%  # EVIDENCE: db_cpu_saturation
+2026-08-25T02:21:30.447Z INFO  orders-service GET /v1/customers/44190/orders 200 in 7402ms
+2026-08-25T02:24:11.339Z WARN  orders-service postgres db-prod-2 cpu=99% buffers_read/s up 240x vs. same hour yesterday  # EVIDENCE: db_cpu_saturation
+2026-08-25T02:28:56.660Z WARN  orders-service http_request_duration_p99 = 9.8s (SLO 0.5s)  # EVIDENCE: query_p99_spike
+2026-08-25T02:33:20.118Z INFO  orders-service no other deploy today; app image unchanged since v6.4.2 (2026-08-18)
+2026-08-25T02:40:07.550Z INFO  orders-service oncall paged: orders latency SLO burn 14x

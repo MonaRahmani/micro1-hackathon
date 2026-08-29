@@ -1,0 +1,33 @@
+DEPLOYMENT RECORD
+=================
+service:       notify-service
+version:       v4.1.0  (previous: v4.0.6)
+deployed_at:   2026-08-26T11:15:00Z
+deployed_by:   ci-pipeline (PR #3302 "make notification delivery more resilient")
+strategy:      rolling, 3 pods
+
+CONTENTS OF THIS RELEASE (two changes shipped together)
+  1. Rewrote the outbound retry policy in notify/delivery.py.
+  2. Upgraded the Kafka client 2.8.1 -> 3.6.0 and renamed the consumer group
+     notify-v1 -> notify-v2.  # NOISE: kafka_client_upgrade
+
+CONFIG CHANGES IN THIS RELEASE
+  RETRY_MAX_ATTEMPTS   3    -> 10        # EVIDENCE: retry_backoff_removed
+  RETRY_BACKOFF_FACTOR 0.5  -> 0.0       # EVIDENCE: retry_backoff_removed
+  RETRY_RESPECT_RETRY_AFTER true -> false
+  RETRY_ON_STATUS      [500,502,503,504] -> [429,500,502,503,504,400,401,404]  # EVIDENCE: retry_on_4xx
+  KAFKA_CLIENT         2.8.1 -> 3.6.0    # NOISE: kafka_client_upgrade
+  KAFKA_GROUP_ID       notify-v1 -> notify-v2  # NOISE: kafka_client_upgrade
+  REPLICAS             3 -> 3 (unchanged)
+
+DOWNSTREAM CONTRACT
+  sms-provider: hard rate limit 500 requests/sec, 429 + Retry-After on breach,
+  account suspension after sustained breach. No sms-provider change today.
+
+NOTES FROM THE RELEASE THREAD
+  - The two consumer-group rebalances (11:15Z, 11:29Z) are expected when a group
+    id changes; both completed with lag 0 and no message loss.  # NOISE: kafka_client_upgrade
+  - Inbound Kafka message rate was flat all morning: ~500/s, same as last week.
+
+PREVIOUS DEPLOY
+  v4.0.6 at 2026-08-20T09:30:00Z — no incident.
