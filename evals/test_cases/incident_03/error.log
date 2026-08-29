@@ -1,0 +1,7 @@
+2026-08-23T18:48:44.772Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s target_status=- (target had not responded)  # EVIDENCE: edge_504_surge
+2026-08-23T18:49:12.004Z ERROR api-gateway java.io.IOException: Broken pipe writing response (client already disconnected), request held upstream 29.9s of 30s read timeout  # EVIDENCE: client_timeout_raised
+2026-08-23T18:51:33.903Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()  # EVIDENCE: thread_pool_saturation
+2026-08-23T18:52:10.448Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s route=/v1/orders
+2026-08-23T18:52:58.661Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s route=/v1/catalog
+2026-08-23T18:55:41.220Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()
+2026-08-23T18:58:44.119Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway 1m_count=4180  # EVIDENCE: edge_504_surge

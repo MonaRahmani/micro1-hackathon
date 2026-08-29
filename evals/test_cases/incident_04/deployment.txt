@@ -1,0 +1,26 @@
+DEPLOYMENT RECORD
+=================
+service:       orders-service
+app version:   v6.4.2 (UNCHANGED — last app deploy 2026-08-18T14:00:00Z)
+change type:   database migration only
+migration:     0042_backfill_order_status
+applied_at:    2026-08-25T02:00:00Z
+applied_by:    migration-runner (PR #1157 "index pending orders for the ops queue")
+duration:      107s
+database:      db-prod-2, table `orders`, 41.2M rows
+
+WHAT THE MIGRATION DID
+  1. DROP INDEX idx_orders_customer_id                       # EVIDENCE: migration_dropped_index
+  2. CREATE INDEX idx_orders_status_partial ON orders (status)
+       WHERE status = 'PENDING'
+  3. UPDATE orders SET status = 'PENDING' WHERE status IS NULL  (0 rows)
+
+REVIEW NOTE ON THE PR (from the merge thread)
+  "dropping idx_orders_customer_id to keep write amplification down — the new
+   partial status index should cover the ops queue query."
+  No one checked which queries used idx_orders_customer_id. The hot read path
+  `SELECT ... FROM orders WHERE customer_id = $1` used it on every request.
+
+OTHER CHANGES IN THE WINDOW
+  none. No app deploy, no config change, no infra change, no traffic change
+  (rps flat vs. the previous night).

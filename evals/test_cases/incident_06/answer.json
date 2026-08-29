@@ -1,0 +1,11 @@
+{
+  "incident_id": "incident_06",
+  "root_cause": "PR #5540 set CACHE_TTL_JITTER_SECONDS to 0 and removed the single-flight guard, while the deploy flushed the whole cache at once. All ~12.9k keys were written in the same second and now expire in the same second, so every 300s the entire cache misses simultaneously and thousands of identical queries stampede Postgres, exhausting max_connections and returning 503s in a 6-second burst every 5 minutes.",
+  "evidence_tags": [
+    "ttl_jitter_removed",
+    "synchronized_expiry",
+    "cache_stampede",
+    "db_qps_sawtooth"
+  ],
+  "has_red_herring": false
+}

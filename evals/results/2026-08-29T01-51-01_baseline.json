@@ -1,0 +1,533 @@
+{
+  "timestamp": "2026-08-29T01:51:01.733344+00:00",
+  "target": "baseline",
+  "model": "claude-sonnet-4-6",
+  "model_requested": null,
+  "judge_model": "claude-haiku-4-5",
+  "total": 6,
+  "errors": 0,
+  "correct_root_cause": 5,
+  "judge_fallbacks": 0,
+  "evidence_precision": 1.0,
+  "evidence_recall": 0.8333,
+  "evidence_f1": 0.8968,
+  "avg_seconds": 10.874,
+  "avg_api_calls": 1.0,
+  "red_herring_cases": 2,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_01",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 8.53,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2793,
+        "output_tokens": 446
+      },
+      "confidence": 99,
+      "root_cause_actual": "The v2.14.0 deployment increased WORKER_CONCURRENCY from 8 to 32 without a corresponding increase in DB_POOL_SIZE (left at 10, max_overflow=0), causing up to 32 concurrent workers to contend for only 10 database connections, exhausting the connection pool and blocking all workers.",
+      "root_cause_expected": "Deploy v2.14.0 raised WORKER_CONCURRENCY from 8 to 32 while leaving DB_POOL_SIZE at 10 with max_overflow 0, so 32 concurrent workers contend for 10 database connections and block in pool acquire until the 30s timeout, exhausting the connection pool.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.591,
+          "token_precision": 0.591,
+          "token_recall": 0.619,
+          "token_f1": 0.605,
+          "would_pass_threshold": true
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same specific change (WORKER_CONCURRENCY raised to 32 in v2.14.0 without corresponding DB_POOL_SIZE increase) and the same mechanism (connection pool exhaustion due to contention between workers and insufficient connections).",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 337,
+            "output_tokens": 73
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 8,
+        "predicted_tags": [
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "expected_tags": [
+          "db_wait_time_spike",
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "matched_tags": [
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "missed_tags": [
+          "db_wait_time_spike"
+        ],
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "WORKER_CONCURRENCY   8  ->  32     # EVIDENCE: worker_concurrency_raised",
+        "DB_POOL_SIZE         10 ->  10     (unchanged)  # EVIDENCE: pool_size_unchanged",
+        "DB_POOL_MAX_OVERFLOW 0  ->  0      (unchanged)",
+        "2026-08-19T14:08:30.117Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=19  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:08:44.221Z ERROR checkout-api sqlalchemy.exc.TimeoutError: QueuePool limit of size 10 overflow 0 reached, connection timed out, timeout 30.00  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:16:20.883Z ERROR checkout-api 32 of 32 workers blocked in db.pool.acquire()  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:05:38.774Z INFO  checkout-api worker pool resized concurrency=32 (was 8)  # EVIDENCE: worker_concurrency_raised",
+        "2026-08-19T14:06:02.118Z INFO  checkout-api db.pool initialized size=10 max_overflow=0  # EVIDENCE: pool_size_unchanged"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_01",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 8.484,
+        "usage": {
+          "input_tokens": 2793,
+          "output_tokens": 446
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "id": "incident_02",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 10.706,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 3010,
+        "output_tokens": 499
+      },
+      "confidence": 99,
+      "root_cause_actual": "PR #2208 introduced an unbounded in-process response cache (_RESPONSE_CACHE) keyed by unique request_id values, meaning every request inserts a new entry and nothing is ever evicted or expired. This caused RSS to grow monotonically until the container hit its 4096Mi memory limit and was OOMKilled repeatedly.",
+      "root_cause_expected": "The response cache added in v3.7.1 is an unbounded module-level dict keyed by request_id, so every request inserts a new entry that is never evicted or expired; resident memory grows monotonically until the container is OOMKilled and restarts.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.362,
+          "token_precision": 0.5,
+          "token_recall": 0.652,
+          "token_f1": 0.566,
+          "would_pass_threshold": true
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: an unbounded module-level cache dictionary keyed by request_id with no eviction/expiration mechanism, causing monotonic memory growth and OOMKill, differing only in specific PR reference and presentation details.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 322,
+            "output_tokens": 70
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 10,
+        "predicted_tags": [
+          "oomkilled_restart",
+          "rss_monotonic_increase",
+          "unbounded_cache_growth"
+        ],
+        "expected_tags": [
+          "oomkilled_restart",
+          "rss_monotonic_increase",
+          "unbounded_cache_growth"
+        ],
+        "matched_tags": [
+          "oomkilled_restart",
+          "rss_monotonic_increase",
+          "unbounded_cache_growth"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "+_RESPONSE_CACHE: dict[str, list[dict]] = {}   # EVIDENCE: unbounded_cache_growth",
+        "+        # keyed by request_id, so every request inserts a new entry and",
+        "+        # nothing is ever evicted or expired",
+        "+        _RESPONSE_CACHE[request_id] = payload    # EVIDENCE: unbounded_cache_growth",
+        "2026-08-21T08:39:47.772Z ERROR reco-service heap dump top retainer: dict at recommend.service._RESPONSE_CACHE, 3.41 GiB, 512044 entries  # EVIDENCE: unbounded_cache_growth",
+        "2026-08-21T08:39:47.770Z ERROR reco-service Container killed by OOM killer (exit 137), rss at kill = 4094Mi  # EVIDENCE: oomkilled_restart",
+        "  response_cache_entries: evictions_total: 0,  \"note\": \"EVIDENCE: unbounded_cache_growth\"",
+        "  RECO_CACHE_ENABLED  (new) -> \"true\"   # EVIDENCE: unbounded_cache_growth",
+        "2026-08-21T08:35:41.902Z INFO  reco-service pod=reco-7c4d-aa rss_mb=3188 requests_served=99204  # EVIDENCE: rss_monotonic_increase",
+        "2026-08-21T08:25:13.001Z INFO  reco-service response cache entries=352117 evictions=0  # EVIDENCE: unbounded_cache_growth"
+      ],
+      "has_red_herring": true,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_02",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 10.701,
+        "usage": {
+          "input_tokens": 3010,
+          "output_tokens": 499
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "id": "incident_03",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 10.193,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2674,
+        "output_tokens": 475
+      },
+      "confidence": 98,
+      "root_cause_actual": "PR #881 raised the payments-svc read timeout from 3s to 30s and simultaneously disabled the circuit breaker. When the partner acquirer latency spiked to p99=12.4s, gateway threads held connections open for up to 30s instead of failing fast at 3s, exhausting the 64-thread shared pool and causing all routes (not just payments) to return 504s.",
+      "root_cause_expected": "PR #881 raised the gateway's payments-svc read timeout from 3s to 30s (and disabled the circuit breaker) while the edge load balancer's proxy_read_timeout stayed at 10s. When partner latency rose, the edge cut clients off at 10s with 504s while gateway worker threads stayed pinned on the upstream call for the full 30s, saturating the 64-thread pool and taking down routes that never touch payments-svc.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.328,
+          "token_precision": 0.529,
+          "token_recall": 0.474,
+          "token_f1": 0.5,
+          "would_pass_threshold": true
+        },
+        "correct": false,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": false,
+          "reason": "The reference root cause identifies a specific timeout mismatch between edge LB (10s) and gateway (30s) as the mechanism, while the candidate omits this critical detail and instead attributes the issue solely to the longer timeout without explaining why the edge LB's shorter timeout prevented fast failure.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 383,
+            "output_tokens": 79
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 8,
+        "predicted_tags": [
+          "client_timeout_raised",
+          "thread_pool_saturation"
+        ],
+        "expected_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "matched_tags": [
+          "client_timeout_raised",
+          "thread_pool_saturation"
+        ],
+        "missed_tags": [
+          "edge_504_surge",
+          "edge_timeout_unchanged"
+        ],
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.667,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "PAYMENTS_READ_TIMEOUT     3s  -> 30s     # EVIDENCE: client_timeout_raised",
+        "PAYMENTS_CIRCUIT_BREAKER  enabled -> disabled  (breaker tripped too often at 3s)",
+        "Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s.",
+        "2026-08-23T18:51:33.903Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:52:10.447Z INFO  api-gateway GET  /v1/orders 504 in 10002ms  (endpoint does not touch payments-svc)",
+        "2026-08-23T18:52:58.660Z INFO  api-gateway GET  /v1/catalog 504 in 10001ms  (endpoint does not touch payments-svc)",
+        "-        .readTimeout(Duration.ofSeconds(3))\n+        .readTimeout(Duration.ofSeconds(30))   // EVIDENCE: client_timeout_raised",
+        "-        if (breaker.isOpen()) {\n-            return AuthResult.degraded(\"payments circuit open\");\n-        }"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_03",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 10.188,
+        "usage": {
+          "input_tokens": 2674,
+          "output_tokens": 475
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "id": "incident_04",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 9.432,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2372,
+        "output_tokens": 515
+      },
+      "confidence": 99,
+      "root_cause_actual": "Migration 0042 dropped the index idx_orders_customer_id, which was the index serving the hot-path query `SELECT * FROM orders WHERE customer_id = $1` on every customer order-history request. Without the index, PostgreSQL performed full sequential scans of the 41.2M-row orders table on every request, saturating the database CPU and causing p99 latency to spike from 210ms to 9.8s.",
+      "root_cause_expected": "Migration 0042 dropped idx_orders_customer_id, which served the hot-path query SELECT * FROM orders WHERE customer_id = $1 on a 41.2M-row table. Without it Postgres falls back to a sequential scan on every customer order-history request, saturating database CPU and blowing the latency SLO. The replacement partial index on status does not cover that query.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.441,
+          "token_precision": 0.719,
+          "token_recall": 0.639,
+          "token_f1": 0.676,
+          "would_pass_threshold": true
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: migration 0042 dropped idx_orders_customer_id, which caused sequential scans on the hot-path query for a 41.2M-row table, saturating CPU and breaking latency SLO; the candidate provides additional specificity about the p99 latency impact but does not contradict or omit the core mechanism.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 373,
+            "output_tokens": 98
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 8,
+        "predicted_tags": [
+          "db_cpu_saturation",
+          "migration_dropped_index",
+          "query_p99_spike",
+          "seq_scan_on_orders"
+        ],
+        "expected_tags": [
+          "db_cpu_saturation",
+          "migration_dropped_index",
+          "query_p99_spike",
+          "seq_scan_on_orders"
+        ],
+        "matched_tags": [
+          "db_cpu_saturation",
+          "migration_dropped_index",
+          "query_p99_spike",
+          "seq_scan_on_orders"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "applying: DROP INDEX idx_orders_customer_id  # EVIDENCE: migration_dropped_index",
+        "2026-08-25T02:09:14.119Z WARN  orders-service query plan: Seq Scan on orders (cost=0.00..1284401.00 rows=41200000)  # EVIDENCE: seq_scan_on_orders",
+        "2026-08-25T02:09:14.121Z ERROR orders-service EXPLAIN: Seq Scan on orders  (cost=0.00..1284401.00 rows=41200000 width=284)  Filter: (customer_id = $1)  # EVIDENCE: seq_scan_on_orders",
+        "DROP INDEX IF EXISTS idx_orders_customer_id;          -- EVIDENCE: migration_dropped_index",
+        "        WHERE customer_id = $1          -- EVIDENCE: seq_scan_on_orders (index no longer exists)",
+        "No one checked which queries used idx_orders_customer_id. The hot read path `SELECT ... FROM orders WHERE customer_id = $1` used it on every request.",
+        "2026-08-25T02:24:11.339Z WARN  orders-service postgres db-prod-2 cpu=99% buffers_read/s up 240x vs. same hour yesterday  # EVIDENCE: db_cpu_saturation",
+        "2026-08-25T02:28:56.660Z WARN  orders-service http_request_duration_p99 = 9.8s (SLO 0.5s)  # EVIDENCE: query_p99_spike"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_04",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 9.427,
+        "usage": {
+          "input_tokens": 2372,
+          "output_tokens": 515
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "id": "incident_05",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 13.105,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 3213,
+        "output_tokens": 771
+      },
+      "confidence": 99,
+      "root_cause_actual": "PR #3302 introduced a retry policy with zero backoff (backoff_factor=0.0), ignored Retry-After headers, raised max attempts from 3 to 10, and added 4xx status codes (including 429) to the retry list. When sms-provider began rate-limiting at 429, the service immediately retried up to 10 times per message with no delay, amplifying outbound traffic from 512 req/s to 5140 req/s—10x the contract limit—causing sms-provider to suspend the account for abuse.",
+      "root_cause_expected": "PR #3302 rewrote the outbound retry policy to 10 attempts with backoff_factor 0.0, stopped respecting Retry-After, and added 4xx statuses (429/400/401/404) to the retry list. Every 429 from sms-provider is retried immediately up to 10 times, amplifying a 500 req/s workload into 5140 req/s — a self-sustaining retry storm that pushed the provider to 96% 429s and then suspended the account.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.183,
+          "token_precision": 0.467,
+          "token_recall": 0.583,
+          "token_f1": 0.519,
+          "would_pass_threshold": true
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same specific change (PR #3302's retry policy modifications: zero backoff, ignoring Retry-After, increased attempts to 10, and adding 4xx statuses to retry list) causing the same mechanism (immediate retries amplifying traffic into a retry storm that triggered account suspension).",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 435,
+            "output_tokens": 82
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 15,
+        "predicted_tags": [
+          "downstream_429_amplified",
+          "retry_backoff_removed",
+          "retry_on_4xx",
+          "retry_storm"
+        ],
+        "expected_tags": [
+          "downstream_429_amplified",
+          "retry_backoff_removed",
+          "retry_on_4xx",
+          "retry_storm"
+        ],
+        "matched_tags": [
+          "downstream_429_amplified",
+          "retry_backoff_removed",
+          "retry_on_4xx",
+          "retry_storm"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "2026-08-26T11:16:10.220Z INFO  notify-service retry policy: max_attempts=10 backoff_factor=0.0 retry_on=[429,500,502,503,504,400,401,404]  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:22:45.661Z INFO  notify-service retrying immediately (attempt 2/10, sleep 0.0s)  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:22:45.663Z WARN  notify-service ignoring Retry-After: 30 (backoff_factor=0.0)  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:23:02.771Z WARN  notify-service outbound request rate 512/s -> 5140/s in 20s  # EVIDENCE: retry_storm",
+        "2026-08-26T11:24:19.902Z WARN  notify-service sms-provider 429 rate = 96% of responses  # EVIDENCE: downstream_429_amplified",
+        "2026-08-26T11:25:41.447Z INFO  notify-service POST sms-provider/send 401 Unauthorized -> retrying (attempt 2/10)  # EVIDENCE: retry_on_4xx",
+        "2026-08-26T11:33:02.339Z WARN  notify-service sms-provider account suspended for abuse (10x contract rate)",
+        "+    max_attempts=10,                                    # EVIDENCE: retry_backoff_removed",
+        "+    backoff_factor=0.0,          # retry immediately    # EVIDENCE: retry_backoff_removed",
+        "+    retry_on_status=(429, 500, 502, 503, 504,",
+        "+                     400, 401, 404),                    # EVIDENCE: retry_on_4xx",
+        "  RETRY_MAX_ATTEMPTS   3    -> 10        # EVIDENCE: retry_backoff_removed",
+        "  RETRY_BACKOFF_FACTOR 0.5  -> 0.0       # EVIDENCE: retry_backoff_removed",
+        "  RETRY_RESPECT_RETRY_AFTER true -> false",
+        "  RETRY_ON_STATUS      [500,502,503,504] -> [429,500,502,503,504,400,401,404]  # EVIDENCE: retry_on_4xx"
+      ],
+      "has_red_herring": true,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_05",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 13.101,
+        "usage": {
+          "input_tokens": 3213,
+          "output_tokens": 771
+        },
+        "stop_reason": "end_turn"
+      }
+    },
+    {
+      "id": "incident_06",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 13.278,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2922,
+        "output_tokens": 667
+      },
+      "confidence": 99,
+      "root_cause_actual": "PR #5540 removed TTL jitter (setting jitter to 0) and flushed the Redis cache on deploy, causing all ~12,900 keys written in the same second to expire simultaneously every 300 seconds. This synchronized expiry, combined with the removal of the single-flight guard, triggered repeated cache stampedes where thousands of concurrent requests hit Postgres directly, exhausting its 200-connection limit and causing 503 errors every 5 minutes.",
+      "root_cause_expected": "PR #5540 set CACHE_TTL_JITTER_SECONDS to 0 and removed the single-flight guard, while the deploy flushed the whole cache at once. All ~12.9k keys were written in the same second and now expire in the same second, so every 300s the entire cache misses simultaneously and thousands of identical queries stampede Postgres, exhausting max_connections and returning 503s in a 6-second burst every 5 minutes.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.134,
+          "token_precision": 0.488,
+          "token_recall": 0.583,
+          "token_f1": 0.532,
+          "would_pass_threshold": true
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: PR #5540's removal of TTL jitter and single-flight guard combined with cache flush causing synchronized expiry of all keys, leading to simultaneous cache misses that create query stampedes exhausting database connections.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 395,
+            "output_tokens": 70
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 12,
+        "predicted_tags": [
+          "cache_stampede",
+          "synchronized_expiry",
+          "ttl_jitter_removed"
+        ],
+        "expected_tags": [
+          "cache_stampede",
+          "db_qps_sawtooth",
+          "synchronized_expiry",
+          "ttl_jitter_removed"
+        ],
+        "matched_tags": [
+          "cache_stampede",
+          "synchronized_expiry",
+          "ttl_jitter_removed"
+        ],
+        "missed_tags": [
+          "db_qps_sawtooth"
+        ],
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "CACHE_TTL_JITTER_SECONDS 60  -> 0       # EVIDENCE: ttl_jitter_removed",
+        "CACHE_SINGLEFLIGHT       true -> false  (removed with the jitter helper)",
+        "CACHE_FLUSH_ON_DEPLOY    false -> true",
+        "The deploy flushed the whole cache at 06:00:00Z, so all ~12.9k keys were\n   written within the same second and, with jitter now 0, they all expire in the\n   same second — every 5 minutes, forever.  # EVIDENCE: synchronized_expiry",
+        "2026-08-27T06:05:00.004Z WARN  catalog-service 12871 keys expired in the same 1s bucket  # EVIDENCE: synchronized_expiry",
+        "2026-08-27T06:05:00.220Z WARN  catalog-service cache hit_rate dropped 97.8% -> 4.1% in 1s  # EVIDENCE: cache_stampede",
+        "2026-08-27T06:05:01.118Z WARN  catalog-service db_qps 180 -> 3240 in 1s, 2900 identical SELECTs for the same 40 product ids  # EVIDENCE: cache_stampede",
+        "2026-08-27T06:05:01.119Z ERROR catalog-service 2900 concurrent identical queries for product_id in (9912, 4471, ...) — no single-flight guard  # EVIDENCE: cache_stampede",
+        "2026-08-27T06:15:00.903Z ERROR catalog-service psycopg.OperationalError: FATAL: sorry, too many clients already (max_connections=200)",
+        "-  CACHE_TTL_JITTER_SECONDS: \"60\"\n+  CACHE_TTL_JITTER_SECONDS: \"0\"            # EVIDENCE: ttl_jitter_removed",
+        "+  CACHE_FLUSH_ON_DEPLOY: \"true\"            # EVIDENCE: synchronized_expiry",
+        "    row = db.fetch_product(product_id)       # EVIDENCE: cache_stampede"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_06",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 13.272,
+        "usage": {
+          "input_tokens": 2922,
+          "output_tokens": 667
+        },
+        "stop_reason": "end_turn"
+      }
+    }
+  ]
+}

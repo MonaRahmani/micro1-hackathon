@@ -1,0 +1,30 @@
+DEPLOYMENT RECORD
+=================
+service:       catalog-service
+version:       v11.0.3  (previous: v10.9.8)
+deployed_at:   2026-08-27T06:00:00Z
+deployed_by:   ci-pipeline (PR #5540 "make catalog cache TTL predictable")
+strategy:      recreate (all pods restarted at once), redis cache flushed
+
+CONFIG CHANGES IN THIS RELEASE
+  CACHE_TTL_SECONDS        300 -> 300     (unchanged)
+  CACHE_TTL_JITTER_SECONDS 60  -> 0       # EVIDENCE: ttl_jitter_removed
+  CACHE_SINGLEFLIGHT       true -> false  (removed with the jitter helper)
+  CACHE_FLUSH_ON_DEPLOY    false -> true
+  REPLICAS                 8 -> 8 (unchanged)
+
+WHY THE JITTER WAS REMOVED (from the PR description)
+  "TTL jitter made cache expiry times hard to reason about in tests. Using a
+   fixed 300s TTL so entries expire predictably."
+
+SIDE EFFECT NOT NOTICED IN REVIEW
+  The deploy flushed the whole cache at 06:00:00Z, so all ~12.9k keys were
+  written within the same second and, with jitter now 0, they all expire in the
+  same second — every 5 minutes, forever.  # EVIDENCE: synchronized_expiry
+
+OTHER FACTS
+  Traffic flat: 1840 rps all morning, same as the previous Thursday.
+  Postgres db-prod-3 unchanged, max_connections=200, no migration today.
+
+PREVIOUS DEPLOY
+  v10.9.8 at 2026-08-18T06:00:00Z — same traffic, no incident (jitter was on).

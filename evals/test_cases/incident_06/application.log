@@ -1,0 +1,18 @@
+2026-08-27T06:00:00.117Z INFO  catalog-service version=v11.0.3 boot, redis cache FLUSHED on deploy
+2026-08-27T06:00:00.118Z INFO  catalog-service cache ttl policy: fixed 300s, jitter disabled  # EVIDENCE: ttl_jitter_removed
+2026-08-27T06:00:41.550Z INFO  catalog-service cold cache: 12904 misses in first 40s, db_qps=3120
+2026-08-27T06:01:30.881Z INFO  catalog-service cache hit_rate=97.8% db_qps=180 (recovered)
+2026-08-27T06:05:00.004Z WARN  catalog-service 12871 keys expired in the same 1s bucket  # EVIDENCE: synchronized_expiry
+2026-08-27T06:05:00.220Z WARN  catalog-service cache hit_rate dropped 97.8% -> 4.1% in 1s  # EVIDENCE: cache_stampede
+2026-08-27T06:05:01.118Z WARN  catalog-service db_qps 180 -> 3240 in 1s, 2900 identical SELECTs for the same 40 product ids  # EVIDENCE: cache_stampede
+2026-08-27T06:05:09.660Z INFO  catalog-service db_qps back to 190, hit_rate 97.6%
+2026-08-27T06:10:00.005Z WARN  catalog-service 12904 keys expired in the same 1s bucket  # EVIDENCE: synchronized_expiry
+2026-08-27T06:10:00.771Z WARN  catalog-service db_qps 180 -> 3310 in 1s  # EVIDENCE: db_qps_sawtooth
+2026-08-27T06:10:08.902Z INFO  catalog-service db_qps back to 186, hit_rate 97.7%
+2026-08-27T06:15:00.447Z WARN  catalog-service 12888 keys expired in the same 1s bucket
+2026-08-27T06:15:00.902Z ERROR catalog-service postgres connection refused: too many clients already (max_connections=200)
+2026-08-27T06:15:03.339Z INFO  catalog-service GET /v1/products/9912 503 in 4021ms
+2026-08-27T06:20:00.118Z WARN  catalog-service db_qps 184 -> 3402 in 1s  # EVIDENCE: db_qps_sawtooth
+2026-08-27T06:20:00.660Z INFO  catalog-service traffic flat all morning: 1840 rps, same as last Thursday
+2026-08-27T06:25:00.550Z WARN  catalog-service 12910 keys expired in the same 1s bucket
+2026-08-27T06:30:12.117Z INFO  catalog-service oncall paged: catalog 503s every 5 minutes, on the minute

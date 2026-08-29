@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-08-28T21:35:24.417594+00:00",
+  "target": "baseline",
+  "model": null,
+  "total": 1,
+  "errors": 1,
+  "correct_root_cause": 0,
+  "evidence_precision": 0.0,
+  "evidence_recall": 0.0,
+  "evidence_f1": 0.0,
+  "avg_seconds": 0.0,
+  "avg_api_calls": 0.0,
+  "red_herring_cases": 0,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_01",
+      "target": "baseline",
+      "status": "error",
+      "elapsed_seconds": 0.984,
+      "error": "BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CeVsAP1uKLejQabsKEyhZ'}",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/ada/micro1_projects/micro1-hackathon/evals/run_eval.py\", line 205, in run_all\n    output = runner(case[\"dir\"], model=model)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/ada/micro1_projects/micro1-hackathon/baseline/run_baseline.py\", line 151, in run_baseline\n    response = client.messages.create(\n               ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/ada/micro1_projects/agenteval/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py\", line 294, in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/ada/micro1_projects/agenteval/.venv/lib/python3.12/site-packages/anthropic/resources/messages/messages.py\", line 968, in create\n    return self._post(\n           ^^^^^^^^^^^\n  File \"/Users/ada/micro1_projects/agenteval/.venv/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1490, in post\n    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/ada/micro1_projects/agenteval/.venv/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1174, in request\n    raise self._make_status_error_from_response(response) from None\nanthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CeVsAP1uKLejQabsKEyhZ'}\n"
+    }
+  ]
+}

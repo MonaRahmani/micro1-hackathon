@@ -1,0 +1,1364 @@
+{
+  "timestamp": "2026-08-29T03:42:23.975208+00:00",
+  "target": "solution",
+  "model": "claude-sonnet-4-6",
+  "model_requested": null,
+  "judge_model": "claude-haiku-4-5",
+  "total": 6,
+  "errors": 0,
+  "correct_root_cause": 6,
+  "judge_fallbacks": 0,
+  "evidence_precision": 1.0,
+  "evidence_recall": 0.9167,
+  "evidence_f1": 0.9523,
+  "avg_seconds": 126.1827,
+  "avg_api_calls": 7.0,
+  "red_herring_cases": 2,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_01",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 109.931,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 21877,
+        "output_tokens": 14089
+      },
+      "confidence": 98,
+      "root_cause_actual": "PR #4471 raised WORKER_CONCURRENCY from 8 to 32 while DB_POOL_SIZE remained at 10 with max_overflow=0. The pool hard-caps at exactly 10 connections regardless of worker count. With 32 workers all needing DB access and only 10 connections available, 22+ workers are always queued waiting for a connection. The pool_timeout of 30s equals the request timeout of 30s, so any queued worker exhausts its full wait budget and the request fails with HTTP 500. Pool waiters grew continuously from 6 → 19 → 27 → 31 → 44 → 52, until all 32 workers were blocked simultaneously, causing complete service unavailability.",
+      "root_cause_expected": "Deploy v2.14.0 raised WORKER_CONCURRENCY from 8 to 32 while leaving DB_POOL_SIZE at 10 with max_overflow 0, so 32 concurrent workers contend for 10 database connections and block in pool acquire until the 30s timeout, exhausting the connection pool.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.219,
+          "token_precision": 0.283,
+          "token_recall": 0.619,
+          "token_f1": 0.388,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: a deploy that increased WORKER_CONCURRENCY from 8 to 32 without proportionally increasing DB_POOL_SIZE (kept at 10 with max_overflow 0), causing workers to exhaust the fixed pool and timeout waiting for connections.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 430,
+            "output_tokens": 80
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 23,
+        "predicted_tags": [
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "expected_tags": [
+          "db_wait_time_spike",
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "matched_tags": [
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "missed_tags": [
+          "db_wait_time_spike"
+        ],
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "-  WORKER_CONCURRENCY: \"8\"",
+        "+  WORKER_CONCURRENCY: \"32\"   # EVIDENCE: worker_concurrency_raised",
+        "  DB_POOL_SIZE         10 ->  10     (unchanged)  # EVIDENCE: pool_size_unchanged",
+        "  DB_POOL_MAX_OVERFLOW 0  ->  0      (unchanged)",
+        "        pool_size=int(os.environ.get(\"DB_POOL_SIZE\", \"10\")),   # EVIDENCE: pool_size_unchanged",
+        "        max_overflow=0,",
+        "        pool_timeout=30,",
+        "2026-08-19T14:05:00.012Z INFO  checkout-api deploy rollout started version=v2.14.0 prev=v2.13.4",
+        "2026-08-19T14:05:38.774Z INFO  checkout-api worker pool resized concurrency=32 (was 8)  # EVIDENCE: worker_concurrency_raised",
+        "2026-08-19T14:06:02.118Z INFO  checkout-api db.pool initialized size=10 max_overflow=0  # EVIDENCE: pool_size_unchanged",
+        "2026-08-19T14:07:55.640Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=6",
+        "2026-08-19T14:08:30.117Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=19  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:08:44.221Z ERROR checkout-api sqlalchemy.exc.TimeoutError: QueuePool limit of size 10 overflow 0 reached, connection timed out, timeout 30.00  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:09:04.455Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=27",
+        "2026-08-19T14:10:44.918Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=31",
+        "2026-08-19T14:12:03.881Z WARN  checkout-api request queued waiting for db connection wait_ms=9412",
+        "2026-08-19T14:13:38.550Z INFO  checkout-api worker=31 POST /api/v1/checkout 500 in 30011ms",
+        "2026-08-19T14:15:22.117Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=44",
+        "2026-08-19T14:16:20.883Z ERROR checkout-api 32 of 32 workers blocked in db.pool.acquire()  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:19:51.283Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=52",
+        "2026-08-19T14:22:30.004Z INFO  checkout-api oncall paged: checkout error rate > 5%",
+        "2026-08-19T14:13:38.549Z ERROR checkout-api request_id=b0f2 POST /api/v1/checkout -> 500 (db connection acquire timeout after 30011ms)",
+        "2026-08-19T14:10:31.005Z ERROR checkout-api request_id=8c14 POST /api/v1/checkout -> 500 (db connection acquire timeout after 30001ms)"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_01",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 109.876,
+        "usage": {
+          "input_tokens": 21877,
+          "output_tokens": 14089
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "PR #4471 (commit 7ac31d20) raised WORKER_CONCURRENCY from 8 to 32 in checkout-api v2.14.0",
+          "DB_POOL_SIZE remained at 10 with max_overflow=0, meaning the pool hard-caps at exactly 10 connections regardless of worker count",
+          "After deploy at 14:05:00Z, 32 workers became active but only 10 DB connections were available, creating a 3.2:1 worker-to-connection ratio",
+          "Workers quickly saturated all 10 pool connections; excess workers queued waiting for a connection (pool waiters grew from 6 → 19 → 27 → 31 → 44 → 52)",
+          "Workers holding connections were delayed because other workers in their dependency chain were also blocked waiting for connections, creating head-of-line blocking",
+          "Requests waited up to 9412ms just to acquire a DB connection, then timed out at the 30s pool_timeout limit, returning HTTP 500",
+          "By 14:16:20Z all 32 of 32 workers were blocked in db.pool.acquire(), causing complete service unavailability",
+          "Checkout error rate exceeded 5% and oncall was paged at 14:22:30Z"
+        ],
+        "ruled_out": [
+          {
+            "candidate": "Postgres server resource exhaustion or capacity limit",
+            "why_not": "Postgres max_connections=400 with only 61 active connections after deploy; Postgres CPU dropped from 22% to 19% post-deploy. The failure was entirely client-side pool exhaustion, not a server-side limit."
+          },
+          {
+            "candidate": "Increased traffic volume / request rate spike",
+            "why_not": "No traffic volume metric shows a spike; application.log notable_absences explicitly state 'No indication of increased traffic volume or request rate spike coinciding with the deploy'; the incident started immediately on deploy with no external traffic change."
+          },
+          {
+            "candidate": "Database query slowdown or slow queries holding connections longer",
+            "why_not": "Postgres CPU was flat or slightly lower post-deploy (19% vs 22%); no slow query logs appear; the facts explicitly note 'No slow query or query plan information logged'. The pool exhausted immediately because worker count exceeded pool size, not because queries became slower."
+          },
+          {
+            "candidate": "The new metrics.incr('checkout.attempt') counter added in the diff",
+            "why_not": "Adding a metrics counter increment does not affect DB connection usage; this change has no causal path to pool exhaustion or latency."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "metrics.incr('checkout.attempt') added in api.py",
+            "why_not": "Adding a metrics counter has no effect on DB connection acquisition. It runs after load_cart is called but does not hold or request a DB connection."
+          },
+          {
+            "candidate": "Postgres server resource exhaustion or capacity limits",
+            "why_not": "2026-08-19T14:17:09.660Z INFO  checkout-api postgres server reports max_connections=400 current_connections=61 — server is at 15% of its connection limit and postgres_cpu_pct dropped from 22 to 19 post-deploy, ruling out server-side pressure."
+          },
+          {
+            "candidate": "Increased inbound traffic volume",
+            "why_not": "No metric in metrics.json shows a request rate spike; app_cpu_pct actually fell from 31 to 12 post-deploy, consistent with workers being blocked rather than busy processing more requests."
+          },
+          {
+            "candidate": "Slow queries holding connections longer",
+            "why_not": "postgres_cpu_pct dropped from 22% to 19% post-deploy, and no slow query log entries appear in any artifact. The pool exhausted within ~2 minutes of deploy due to worker count alone."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "WORKER_CONCURRENCY = 32 (deploy/checkout-api/values.yaml via recent_changes.diff)",
+              "DB_POOL_SIZE = 10, max_overflow = 0 (checkout/db.py via recent_changes.diff; deployment.txt)"
+            ],
+            "governs": "number of workers competing for DB connections vs. hard cap on available DB connections",
+            "relationship_ok": false,
+            "note": "32 workers share a pool of exactly 10 connections (max_overflow=0 means no burst capacity). At full concurrency, 22 workers are always blocked waiting for a connection, causing queue growth and eventual 30s timeout failures."
+          },
+          {
+            "values": [
+              "pool_timeout = 30 (checkout/db.py via recent_changes.diff)",
+              "REQUEST_TIMEOUT_SECONDS = 30 (deployment.txt, unchanged)"
+            ],
+            "governs": "end-to-end request timeout vs. DB connection acquire timeout",
+            "relationship_ok": false,
+            "note": "The pool_timeout equals the request timeout. A request that waits the full 30s for a DB connection will itself also time out at ~30s, giving zero margin for actual query execution. Both fire at the same threshold, ensuring any pool-queued request fails with HTTP 500."
+          },
+          {
+            "values": [
+              "DB_POOL_SIZE = 10 (deployment.txt, unchanged)",
+              "postgres_server_active_connections after_deploy = 61, max_connections = 400 (metrics.json; application.log 14:17:09)"
+            ],
+            "governs": "client-side pool cap vs. server-side connection capacity",
+            "relationship_ok": true,
+            "note": "Server is nowhere near its limit; the bottleneck is entirely the client-side pool cap of 10."
+          },
+          {
+            "values": [
+              "WORKER_CONCURRENCY = 32 (recent_changes.diff)",
+              "db_pool_checked_out_connections after_deploy = 10.0, capacity = 10 (metrics.json)"
+            ],
+            "governs": "worker count vs. observed pool saturation",
+            "relationship_ok": false,
+            "note": "Pool is pegged at 100% utilisation immediately after deploy, confirming worker count exceeds pool size."
+          }
+        ],
+        "dropped_citations": [
+          "\"after_deploy\": 29.9,",
+          "\"note\": \"EVIDENCE: db_wait_time_spike\""
+        ],
+        "added_evidence": [
+          "2026-08-19T14:00:09.744Z INFO  checkout-api db.pool checked_out=3 available=7 waiters=0",
+          "2026-08-19T14:17:09.660Z INFO  checkout-api postgres server reports max_connections=400 current_connections=61",
+          "  REQUEST_TIMEOUT_SECONDS: \"30\"",
+          "2026-08-19T14:21:02.660Z ERROR checkout-api request_id=41ac GET /api/v1/cart/33ae91 -> 500 (db connection acquire timeout after 30003ms)",
+          "  \"metric\": \"db_pool_checked_out_connections\",",
+          "  \"after_deploy\": 10.0,",
+          "  \"capacity\": 10,",
+          "  \"note\": \"EVIDENCE: pool_exhaustion\"",
+          "  \"metric\": \"db_pool_wait_seconds_p99\",",
+          "  \"before_deploy\": 0.004,",
+          "  \"note\": \"EVIDENCE: db_wait_time_spike\"",
+          "  \"metric\": \"app_cpu_pct\",",
+          "  \"before_deploy\": 31,",
+          "  \"after_deploy\": 12"
+        ],
+        "unresolved": "The hypothesis mentions a '3.2:1 worker-to-connection ratio' implying gradual starvation, but the log shows waiters=6 as early as 14:07:55 — less than 2 minutes after the pool initialised — and the initial successful requests (worker=17 at 14:06:41, worker=24 at 14:07:12) showed already-elevated latency (890ms, 1204ms) suggesting mild contention began almost immediately. This is consistent with the root cause but the exact onset speed is not fully explained by the artifacts. No slow-query or per-request DB hold-time data is available to quantify how long each worker held a connection.",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_01.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_01.md"
+      }
+    },
+    {
+      "id": "incident_02",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 130.45,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 23772,
+        "output_tokens": 15990
+      },
+      "confidence": 99,
+      "root_cause_actual": "PR #2208 (v3.7.1) introduced an unbounded in-process response cache (_RESPONSE_CACHE: dict[str, list[dict]] = {}) keyed by request_id with no eviction, TTL, or size limit. At ~47.8 RPS with unique request_ids, cache entries accumulated permanently in the module-level dict (512,044 entries, 3.41 GiB by OOMKill), driving RSS monotonically from 412 MB at boot to 4094 MB — the full 4096Mi container memory limit (unchanged from v3.6.9). With no eviction possible and GC unable to reclaim strongly-referenced entries, cgroup reclaim failed and the OOM killer terminated the container (exit 137). Each restart cleared the in-process cache but reloaded the same code, causing repeated OOMKills and CrashLoopBackOff.",
+      "root_cause_expected": "The response cache added in v3.7.1 is an unbounded module-level dict keyed by request_id, so every request inserts a new entry that is never evicted or expired; resident memory grows monotonically until the container is OOMKilled and restarts.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.057,
+          "token_precision": 0.183,
+          "token_recall": 0.478,
+          "token_f1": 0.265,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: an unbounded module-level response cache dictionary in v3.7.1 with no eviction mechanism that accumulates entries indefinitely, causing monotonic memory growth and OOMKill, with the candidate providing additional implementation details and operational context that are consistent with and support the reference cause.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 456,
+            "output_tokens": 85
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 21,
+        "predicted_tags": [
+          "oomkilled_restart",
+          "rss_monotonic_increase",
+          "unbounded_cache_growth"
+        ],
+        "expected_tags": [
+          "oomkilled_restart",
+          "rss_monotonic_increase",
+          "unbounded_cache_growth"
+        ],
+        "matched_tags": [
+          "oomkilled_restart",
+          "rss_monotonic_increase",
+          "unbounded_cache_growth"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "+_RESPONSE_CACHE: dict[str, list[dict]] = {}   # EVIDENCE: unbounded_cache_growth",
+        "+        _RESPONSE_CACHE[request_id] = payload    # EVIDENCE: unbounded_cache_growth",
+        "+        # keyed by request_id, so every request inserts a new entry and",
+        "+        # nothing is ever evicted or expired",
+        "2026-08-21T08:11:02.337Z INFO  reco-service response cache entries=142118 evictions=0  # EVIDENCE: unbounded_cache_growth",
+        "2026-08-21T08:25:13.001Z INFO  reco-service response cache entries=352117 evictions=0  # EVIDENCE: unbounded_cache_growth",
+        "2026-08-21T08:31:55.118Z INFO  reco-service gc collected=0 objects, heap unchanged",
+        "2026-08-21T08:35:41.902Z INFO  reco-service pod=reco-7c4d-aa rss_mb=3188 requests_served=99204  # EVIDENCE: rss_monotonic_increase",
+        "2026-08-21T08:38:02.444Z WARN  reco-service memory pressure: rss 3620Mi / limit 4096Mi, cgroup reclaim failing",
+        "2026-08-21T08:39:47.770Z ERROR reco-service Container killed by OOM killer (exit 137), rss at kill = 4094Mi  # EVIDENCE: oomkilled_restart",
+        "2026-08-21T08:39:47.772Z ERROR reco-service heap dump top retainer: dict at recommend.service._RESPONSE_CACHE, 3.41 GiB, 512044 entries  # EVIDENCE: unbounded_cache_growth",
+        "2026-08-21T09:14:33.661Z ERROR reco-service heap dump top retainer: dict at recommend.service._RESPONSE_CACHE, 3.38 GiB, 508911 entries",
+        "2026-08-21T08:39:52.220Z INFO  reco-service pod=reco-7c4d-aa boot version=v3.7.1 rss_mb=409",
+        "2026-08-21T08:39:47.771Z ERROR reco-service pod=reco-7c4d-aa terminated reason=OOMKilled restart_count=1  # EVIDENCE: oomkilled_restart",
+        "2026-08-21T09:14:33.660Z ERROR reco-service pod=reco-7c4d-ab terminated reason=OOMKilled restart_count=2  # EVIDENCE: oomkilled_restart",
+        "2026-08-21T09:48:21.549Z ERROR reco-service Container killed by OOM killer (exit 137), rss at kill = 4095Mi",
+        "  RECO_CACHE_ENABLED  (new) -> \"true\"   # EVIDENCE: unbounded_cache_growth",
+        "  v3.6.9 at 2026-08-12T11:00:00Z — steady rss ~600Mi for 9 days, zero restarts.",
+        "  Traffic on 2026-08-21 was flat vs. the previous week (no load spike).",
+        "\"shape\": \"sawtooth: climbs monotonically until OOM, resets on restart\",",
+        "\"evictions_total\": 0,"
+      ],
+      "has_red_herring": true,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_02",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 130.437,
+        "usage": {
+          "input_tokens": 23772,
+          "output_tokens": 15990
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "Commit b91f0c74 in PR #2208 deployed at 2026-08-21T07:58Z added a module-level dict _RESPONSE_CACHE: dict[str, list[dict]] = {} with no eviction or expiry mechanism.",
+          "Every incoming request with a unique request_id writes its full payload to _RESPONSE_CACHE and nothing is ever removed.",
+          "At ~47.8 RPS with unique request_ids, cache entries accumulate continuously: 142,118 entries (~11 min), 352,117 entries (~25 min), 512,044 entries at first OOMKill.",
+          "The cache dict alone held 3.41 GiB of memory (confirmed by heap dump at OOMKill), driving RSS from 412 MB at boot to 3,620 MB within ~38 minutes.",
+          "GC collected 0 objects because all cache entries are strongly referenced by the module-level dict, preventing any reclamation.",
+          "RSS hit the 4096Mi container memory limit, cgroup reclaim failed, and the OOM killer terminated the container (exit 137).",
+          "Each restart cleared the in-process cache (RSS reset to ~412 MB), but the same code reloaded and the unbounded accumulation restarted immediately, causing repeated OOMKills and CrashLoopBackOff."
+        ],
+        "ruled_out": [
+          {
+            "candidate": "Migration from requests to httpx HTTP client",
+            "why_not": "httpx errors were transient (recovered in 180-240ms), outbound error rate to feature-store changed minimally (0.4% to 0.5%), p99 latency was unchanged (91ms to 88ms), and the feature-store connectivity issues are explicitly labelled NOISE: httpx_migration across all artifacts. The RSS growth and OOMKills are fully explained by the cache without any contribution from the HTTP client change."
+          },
+          {
+            "candidate": "Traffic spike causing elevated memory usage",
+            "why_not": "Traffic on incident date was flat vs. the previous week (47.2 RPS before deploy vs. 47.8 RPS after). The deployment record explicitly states 'Traffic on 2026-08-21 was flat vs. the previous week (no load spike).'"
+          },
+          {
+            "candidate": "Memory limit being too low (4096Mi)",
+            "why_not": "The memory limit was unchanged at 4096Mi and v3.6.9 ran stably for 9 days at ~600Mi RSS with zero restarts under the same limit. The limit is not the cause; the unbounded cache is the cause of exceeding it."
+          },
+          {
+            "candidate": "feature-store instability causing cascading failure",
+            "why_not": "feature-store had only two brief restarts (08:02Z and 08:19Z), both recovered by httpx retries with no user-visible errors and no sustained degradation. Feature-store errors did not contribute to the RSS growth or OOMKills."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "Migration from requests to httpx HTTP client",
+            "why_not": "2026-08-21T08:00:12.551Z INFO  reco-service http client backend=httpx (was requests)  # NOISE: httpx_migration — all httpx errors recovered within 180-240ms, outbound error rate changed only from 0.4% to 0.5%, p99 latency improved slightly (91ms to 88ms), and all related lines are explicitly tagged NOISE: httpx_migration in the artifacts."
+          },
+          {
+            "candidate": "Traffic spike causing elevated memory usage",
+            "why_not": "Traffic on 2026-08-21 was flat vs. the previous week (no load spike). — deployment.txt; requests_per_second before_deploy=47.2, after_deploy=47.8 — metrics.json."
+          },
+          {
+            "candidate": "Container memory limit being too low",
+            "why_not": "MEMORY_LIMIT 4096Mi -> 4096Mi (unchanged) — deployment.txt; v3.6.9 ran at ~600Mi RSS for 9 days under the same limit with zero restarts."
+          },
+          {
+            "candidate": "feature-store instability",
+            "why_not": "feature-store had a brief restart at 08:02Z and 08:19Z; httpx retried and recovered both times with no user-visible errors. — deployment.txt; outbound_http_error_rate_pct_feature_store after_deploy=0.5 with comment 'httpx retries succeeded; no sustained change' — metrics.json."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "MEMORY_LIMIT = 4096Mi (deployment.txt)",
+              "rss at kill = 4094Mi (error.log)"
+            ],
+            "governs": "container memory ceiling vs. observed RSS at OOMKill",
+            "relationship_ok": false,
+            "note": "RSS reached 4094Mi, essentially the full 4096Mi limit, confirming the cache drove RSS to the ceiling. The limit itself is unchanged; the new cache is what caused usage to collide with it."
+          },
+          {
+            "values": [
+              "evictions_total = 0 (metrics.json)",
+              "_RESPONSE_CACHE: dict[str, list[dict]] = {} with no eviction logic (recent_changes.diff)"
+            ],
+            "governs": "cache size bound vs. memory growth",
+            "relationship_ok": false,
+            "note": "No eviction mechanism exists in code, confirmed by evictions_total=0 in metrics. Cache grows without bound until OOM."
+          },
+          {
+            "values": [
+              "requests_per_second after_deploy = 47.8 (metrics.json)",
+              "response_cache_entries after_deploy = 512044 (metrics.json)"
+            ],
+            "governs": "request rate driving unbounded cache accumulation",
+            "relationship_ok": false,
+            "note": "At ~47.8 RPS with unique request_ids, ~512k entries accumulated in ~38 minutes, each permanently retained. This is consistent with the sawtooth RSS growth pattern."
+          },
+          {
+            "values": [
+              "MEMORY_LIMIT = 4096Mi (deployment.txt, unchanged)",
+              "v3.6.9 steady rss ~600Mi for 9 days (deployment.txt)"
+            ],
+            "governs": "headroom under previous version vs. new version",
+            "relationship_ok": true,
+            "note": "Previous version ran well within the same 4096Mi limit at ~600Mi RSS, confirming the limit is not the cause — the new cache is."
+          },
+          {
+            "values": [
+              "httpx timeout = 2.0s (recent_changes.diff)",
+              "requests.Session original timeout = 2.0s (recent_changes.diff)"
+            ],
+            "governs": "outbound HTTP timeout to feature-store",
+            "relationship_ok": true,
+            "note": "Timeout unchanged in effective value; httpx client sets timeout=2.0 matching the original requests call. No mismatch here."
+          },
+          {
+            "values": [
+              "httpx retries = 3 (recent_changes.diff: HTTPTransport(retries=3))",
+              "outbound_http_error_rate_pct_feature_store after_deploy = 0.5 (metrics.json)"
+            ],
+            "governs": "retry behaviour against feature-store transient errors",
+            "relationship_ok": true,
+            "note": "Retries succeeded; error rate barely changed (0.4% to 0.5%) and deployment notes confirm no user-visible errors. Not a contributing factor."
+          }
+        ],
+        "dropped_citations": [
+          "2026-08-21T08:38:02.444Z WARN  reco-service memory pressure: rss 3620Mi / limit 4096Mi, cgroup reclaim failing  [hypothesis cited this with timestamp 08:38:02.444Z but the application.log line has timestamp 08:38:02.443Z — the verbatim match is in error.log at 08:38:02.444Z, which is kept; the application.log variant at 08:38:02.443Z reads 'WARN  reco-service pod=reco-7c4d-aa rss_mb=3620 approaching memory limit 4096Mi' — these are two distinct lines; the hypothesis citation is correct from error.log]",
+          "\"before_deploy\": 0,  [container_restarts_total]  [not verbatim; actual line is: \"before_deploy\": 0,]",
+          "\"after_deploy\": 3,  [container_restarts_total]  [not verbatim; actual line is: \"after_deploy\": 3,]",
+          "\"samples_after_deploy\": [412, 938, 1622, 2410, 3188, 3620, 412, 1010, 1980],  [trailing comma differs — verbatim line in metrics.json has no trailing bracket issue, accepted as close enough; however '1010, 1980' — verified present]"
+        ],
+        "added_evidence": [
+          "2026-08-21T08:00:11.004Z INFO  reco-service pod=reco-7c4d-aa boot version=v3.7.1 rss_mb=412",
+          "2026-08-21T08:05:30.880Z INFO  reco-service pod=reco-7c4d-aa rss_mb=938 requests_served=14002",
+          "2026-08-21T08:15:47.660Z INFO  reco-service pod=reco-7c4d-aa rss_mb=1622 requests_served=41890",
+          "2026-08-21T08:25:12.774Z INFO  reco-service pod=reco-7c4d-aa rss_mb=2410 requests_served=70551",
+          "2026-08-21T08:38:02.443Z WARN  reco-service pod=reco-7c4d-aa rss_mb=3620 approaching memory limit 4096Mi",
+          "2026-08-21T09:48:21.550Z ERROR reco-service pod=reco-7c4d-ac terminated reason=OOMKilled restart_count=3",
+          "2026-08-21T09:50:02.117Z INFO  reco-service oncall paged: reco-service CrashLoopBackOff",
+          "deployed_by:   ci-pipeline (PR #2208 \"cache recommendation responses + move to httpx\")",
+          "commit b91f0c74  \"cache recommendation responses + move to httpx (PR #2208)\"",
+          "  MEMORY_LIMIT      4096Mi -> 4096Mi  (unchanged)",
+          "+        if request_id in _RESPONSE_CACHE:",
+          "+            return _RESPONSE_CACHE[request_id]"
+        ],
+        "unresolved": "",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_02.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_02.md"
+      }
+    },
+    {
+      "id": "incident_03",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 122.114,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 21598,
+        "output_tokens": 14657
+      },
+      "confidence": 97,
+      "root_cause_actual": "PR #881 (api-gateway v9.2.0, deployed 18:40:00Z) raised the gateway's PAYMENTS_READ_TIMEOUT from 3s to 30s and disabled the circuit breaker. The critical value mismatch is: gateway read timeout (30s) > ALB proxy_read_timeout (10s, unchanged since 2024). When the partner acquirer latency spiked to 12.4s at 18:47Z, the ALB reached its 10s limit and returned 504 to clients, but the gateway thread did not abort — it continued holding the upstream connection for up to 29.9s of the 30s timeout. With the circuit breaker removed, every new payment request also consumed a thread for the full 30s rather than failing fast. Threads accumulated faster than they were freed; all 64 gateway worker threads became blocked in PaymentsClient.execute() by 18:51Z. With no free threads, the RejectedExecutionException was thrown for every inbound request regardless of route, causing /v1/orders and /v1/catalog — endpoints that do not touch payments-svc — to also return 504, dropping gateway availability to 88.1%.",
+      "root_cause_expected": "PR #881 raised the gateway's payments-svc read timeout from 3s to 30s (and disabled the circuit breaker) while the edge load balancer's proxy_read_timeout stayed at 10s. When partner latency rose, the edge cut clients off at 10s with 504s while gateway worker threads stayed pinned on the upstream call for the full 30s, saturating the 64-thread pool and taking down routes that never touch payments-svc.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.034,
+          "token_precision": 0.286,
+          "token_recall": 0.579,
+          "token_f1": 0.383,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: PR #881's mismatch between the raised 30s gateway timeout and the unchanged 10s ALB timeout, combined with the disabled circuit breaker, which allowed threads to block for extended periods and exhaust the thread pool.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 564,
+            "output_tokens": 73
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 31,
+        "predicted_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "expected_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "matched_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "2026-08-23T18:40:03.550Z INFO  api-gateway upstream payments-svc client configured connect=1s read=30s (was read=3s)  # EVIDENCE: client_timeout_raised",
+        "2026-08-23T18:40:03.551Z INFO  api-gateway edge alb-prod proxy_read_timeout=10s (unchanged this release)  # EVIDENCE: edge_timeout_unchanged",
+        "2026-08-23T18:47:30.660Z WARN  api-gateway upstream payments-svc slow: partner acquirer p99 climbed to 12.4s",
+        "2026-08-23T18:48:44.773Z WARN  api-gateway edge returned 504 to client while gateway thread still waiting on payments-svc  # EVIDENCE: edge_504_surge",
+        "2026-08-23T18:49:12.005Z INFO  api-gateway POST /v1/payments (client gone) upstream still open for 29.9s  # EVIDENCE: client_timeout_raised",
+        "2026-08-23T18:51:33.902Z WARN  api-gateway threads_busy=64/64 (100%) accept queue depth=214  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:51:33.903Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:52:10.447Z INFO  api-gateway GET  /v1/orders 504 in 10002ms  (endpoint does not touch payments-svc)",
+        "2026-08-23T18:52:58.660Z INFO  api-gateway GET  /v1/catalog 504 in 10001ms  (endpoint does not touch payments-svc)",
+        "2026-08-23T18:54:20.771Z WARN  api-gateway threads_busy=64/64 (100%) accept queue depth=611  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:56:02.339Z INFO  api-gateway payments-svc itself: 5xx rate 0.03%, cpu 34%, healthy",
+        "2026-08-23T18:58:44.118Z WARN  api-gateway edge alb-prod 504 count last 1m = 4180  # EVIDENCE: edge_504_surge",
+        "2026-08-23T19:01:07.550Z INFO  api-gateway oncall paged: gateway availability < 90% across ALL routes",
+        "2026-08-23T18:48:44.772Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s target_status=- (target had not responded)  # EVIDENCE: edge_504_surge",
+        "2026-08-23T18:49:12.004Z ERROR api-gateway java.io.IOException: Broken pipe writing response (client already disconnected), request held upstream 29.9s of 30s read timeout  # EVIDENCE: client_timeout_raised",
+        "2026-08-23T18:55:41.220Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()",
+        "  PAYMENTS_READ_TIMEOUT     3s  -> 30s     # EVIDENCE: client_timeout_raised",
+        "  PAYMENTS_CIRCUIT_BREAKER  enabled -> disabled  (breaker tripped too often at 3s)",
+        "  alb-prod proxy_read_timeout = 10s   # EVIDENCE: edge_timeout_unchanged",
+        "  This value has been 10s since 2024 and was not touched by PR #881.",
+        "  Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner",
+        "  degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s.",
+        "-        .readTimeout(Duration.ofSeconds(3))",
+        "+        .readTimeout(Duration.ofSeconds(30))   // EVIDENCE: client_timeout_raised",
+        "-        if (breaker.isOpen()) {",
+        "-            return AuthResult.degraded(\"payments circuit open\");",
+        "-        }",
+        "-    circuitBreaker: enabled",
+        "+    circuitBreaker: disabled",
+        "# NOTE: edge/alb-prod.tf is NOT touched by this PR.",
+        "# alb-prod currently has proxy_read_timeout = 10  # EVIDENCE: edge_timeout_unchanged"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_03",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 122.101,
+        "usage": {
+          "input_tokens": 21598,
+          "output_tokens": 14657
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "api-gateway v9.2.0 deployed at 18:40:00Z with PAYMENTS_READ_TIMEOUT raised 3s→30s and PAYMENTS_CIRCUIT_BREAKER disabled (PR #881, commit 3f0ab155)",
+          "At 18:47Z, partner acquirer p99 latency rose from ~1.9s to 12.4s (known degradation ACQ-3391); payments calls now took 12–30s to complete",
+          "ALB proxy_read_timeout remained at 10s (unchanged by PR #881); after 10s the ALB returned 504 to the client and dropped the connection",
+          "Because the gateway's read timeout was now 30s, the gateway thread did NOT abort when the client disconnected; it held the upstream connection open for up to 29.9s (observed 'client gone; upstream held 29.9s of 30s timeout')",
+          "Under v9.1.7, the 3s read timeout would have released threads quickly; the circuit breaker would have opened and shed load. Both protections were removed in v9.2.0",
+          "New payment requests continued arriving; each consumed a thread for ~30s. With 64 total threads and each taking 30s, threads accumulated faster than they were freed",
+          "By 18:51Z all 64 worker threads were blocked in PaymentsClient.execute(); accept queue depth reached 214 then 611",
+          "With no free threads, every inbound request regardless of route—/v1/orders, /v1/catalog—was rejected (RejectedExecutionException), causing non-payments routes to also return 504",
+          "Gateway availability fell to 88.1%; ALB recorded 4180 504s in a single minute; oncall paged at 19:01Z"
+        ],
+        "ruled_out": [
+          {
+            "candidate": "payments-svc internal failure",
+            "why_not": "payments-svc 5xx rate was 0.03% and CPU 34% both before and after deploy; it was healthy throughout the incident. The problem was gateway-side thread exhaustion, not payments-svc failure."
+          },
+          {
+            "candidate": "Partner acquirer latency spike alone (without the timeout change)",
+            "why_not": "Under v9.1.7, the 3s read timeout meant slow acquirer calls failed fast and threads were released quickly. The deployment note explicitly states 'Under v9.1.7 these calls failed fast at 3s.' The acquirer spike is a necessary triggering condition but would not have caused thread exhaustion without the timeout being raised to 30s."
+          },
+          {
+            "candidate": "Traffic spike / increased request volume",
+            "why_not": "No evidence of increased request rate preceding the incident; gateway CPU actually dropped from 27% to 8% after deploy, and notable absences across artifacts confirm no traffic spike was observed."
+          },
+          {
+            "candidate": "ALB misconfiguration (proxy_read_timeout)",
+            "why_not": "The ALB proxy_read_timeout of 10s was unchanged since 2024 and was not touched by PR #881. Under v9.1.7 with 3s gateway timeout this configuration caused no incident. The mismatch became harmful only because the gateway timeout was raised above the ALB timeout in v9.2.0."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "payments-svc internal failure",
+            "why_not": "2026-08-23T18:56:02.339Z INFO  api-gateway payments-svc itself: 5xx rate 0.03%, cpu 34%, healthy — payments-svc metrics were stable before and after the deploy."
+          },
+          {
+            "candidate": "Traffic spike / increased request volume",
+            "why_not": "gateway_cpu_pct dropped from 27 to 8 after deploy (metrics.json), inconsistent with a traffic surge; no artifact references elevated inbound request rates."
+          },
+          {
+            "candidate": "ALB proxy_read_timeout misconfiguration in isolation",
+            "why_not": "alb-prod proxy_read_timeout = 10s has been unchanged since 2024 and caused no incident under v9.1.7 with the 3s gateway timeout. It only becomes a problem in combination with the gateway timeout being raised above it in v9.2.0."
+          },
+          {
+            "candidate": "Partner acquirer latency spike alone (without the timeout change)",
+            "why_not": "deployment.txt explicitly states 'Under v9.1.7 these calls failed fast at 3s.' The 3s timeout and enabled circuit breaker would have released threads and shed load quickly; thread exhaustion would not have occurred."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "PAYMENTS_READ_TIMEOUT 3s -> 30s (deployment.txt)",
+              "alb-prod proxy_read_timeout = 10s (deployment.txt / recent_changes.diff)"
+            ],
+            "governs": "gateway-to-upstream read timeout vs. ALB-to-gateway timeout on the same inbound request path",
+            "relationship_ok": false,
+            "note": "Gateway read timeout (30s) now exceeds ALB proxy_read_timeout (10s). ALB drops the client connection at 10s, but the gateway thread continues holding the upstream connection for up to 30s. This mismatch is the direct mechanism that causes thread accumulation."
+          },
+          {
+            "values": [
+              "GATEWAY_WORKER_THREADS 64 (deployment.txt)",
+              "threads_busy=64/64 (100%) accept queue depth=214 (application.log)"
+            ],
+            "governs": "thread pool capacity vs. observed thread utilisation under slow payment calls",
+            "relationship_ok": false,
+            "note": "64 threads is the hard ceiling. With each thread held for up to 30s on a slow acquirer call, a sustained arrival rate fills all 64 threads and exhausts the pool."
+          },
+          {
+            "values": [
+              "gateway read timeout = 30s (recent_changes.diff / deployment.txt)",
+              "upstream payments p99 latency = 12.4s (application.log)"
+            ],
+            "governs": "whether the gateway thread aborts the upstream call before or after ALB gives up",
+            "relationship_ok": false,
+            "note": "12.4s acquirer latency exceeds ALB 10s limit, so ALB returns 504 to client first; because gateway timeout is 30s the thread does not abort and holds the upstream socket for ~29.9s."
+          },
+          {
+            "values": [
+              "PAYMENTS_CIRCUIT_BREAKER disabled (deployment.txt / recent_changes.diff)",
+              "upstream payments p99 latency = 12.4s (application.log)"
+            ],
+            "governs": "load-shedding protection when upstream is degraded",
+            "relationship_ok": false,
+            "note": "Circuit breaker was the secondary protection that would have shed load during the acquirer degradation. Its removal means every new payment request consumes a thread for the full 30s rather than failing fast."
+          },
+          {
+            "values": [
+              "payments_svc_5xx_rate_pct before=0.03 after=0.03 (metrics.json)",
+              "payments_svc_cpu_pct before=33 after=34 (metrics.json)"
+            ],
+            "governs": "whether payments-svc itself was the source of the incident",
+            "relationship_ok": true,
+            "note": "payments-svc was healthy throughout; the failure was entirely gateway-side thread exhaustion."
+          },
+          {
+            "values": [
+              "gateway_cpu_pct before=27 after=8 (metrics.json)",
+              "gateway_worker_threads_busy after=64 (metrics.json)"
+            ],
+            "governs": "whether a CPU spike or traffic surge caused the thread exhaustion",
+            "relationship_ok": true,
+            "note": "Gateway CPU dropped (threads are blocked I/O-waiting, not executing), confirming this is I/O thread saturation, not a compute overload or traffic spike."
+          }
+        ],
+        "dropped_citations": [
+          "+        circuitBreaker: disabled",
+          "-        circuitBreaker: enabled",
+          "\"after_deploy\": 4180,",
+          "\"after_deploy\": 64,",
+          "\"after_deploy\": 29.9,"
+        ],
+        "added_evidence": [
+          "2026-08-23T18:40:02.117Z INFO  api-gateway version=v9.2.0 boot threads=64",
+          "2026-08-23T18:50:40.118Z WARN  api-gateway threads_busy=58/64 (91%)",
+          "2026-08-23T18:48:05.221Z INFO  api-gateway POST /v1/payments 200 in 12380ms threads_busy=29",
+          "2026-08-23T18:52:10.448Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s route=/v1/orders",
+          "2026-08-23T18:52:58.661Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s route=/v1/catalog",
+          "  gateway_cpu_pct before=27 after=8 (metrics.json — CPU drop confirms threads are blocked I/O-waiting, not compute-bound)",
+          "  gateway_availability_pct_all_routes before=99.98 after=88.1 (metrics.json)",
+          "  GATEWAY_WORKER_THREADS    64  -> 64      (unchanged)",
+          "  PAYMENTS_CONNECT_TIMEOUT  1s  -> 1s      (unchanged)"
+        ],
+        "unresolved": "",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_03.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_03.md"
+      }
+    },
+    {
+      "id": "incident_04",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 121.259,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 20877,
+        "output_tokens": 14452
+      },
+      "confidence": 99,
+      "root_cause_actual": "Migration 0042_backfill_order_status (PR #1157) dropped idx_orders_customer_id, which was the index serving every hot-path customer order-history query (SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50) at ~312 requests/second. Without this index, PostgreSQL fell back to full sequential scans across all 41.2M rows of the orders table. With ~309 such scans per second, blocks read per second rose 240x (1,240 → 298,000), saturating db-prod-2 CPU from 24% to 99%, driving mean query time to 5,910ms and p99 HTTP latency from 210ms to 9,800ms — a 14x SLO burn rate breach. The 10,000ms statement timeout only partially mitigated the damage, cancelling the slowest queries while still allowing multi-second degraded responses.",
+      "root_cause_expected": "Migration 0042 dropped idx_orders_customer_id, which served the hot-path query SELECT * FROM orders WHERE customer_id = $1 on a 41.2M-row table. Without it Postgres falls back to a sequential scan on every customer order-history request, saturating database CPU and blowing the latency SLO. The replacement partial index on status does not cover that query.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.075,
+          "token_precision": 0.303,
+          "token_recall": 0.639,
+          "token_f1": 0.411,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: Migration 0042 dropped idx_orders_customer_id, which was critical for the hot-path customer order-history query, forcing sequential scans on a 41M-row table and causing database saturation. The candidate provides additional operational details (request rates, block reads, CPU percentages, latencies) but describes the identical root cause mechanism.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 491,
+            "output_tokens": 99
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 16,
+        "predicted_tags": [
+          "db_cpu_saturation",
+          "migration_dropped_index",
+          "query_p99_spike",
+          "seq_scan_on_orders"
+        ],
+        "expected_tags": [
+          "db_cpu_saturation",
+          "migration_dropped_index",
+          "query_p99_spike",
+          "seq_scan_on_orders"
+        ],
+        "matched_tags": [
+          "db_cpu_saturation",
+          "migration_dropped_index",
+          "query_p99_spike",
+          "seq_scan_on_orders"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "2026-08-25T02:00:04.550Z INFO  orders-service applying: DROP INDEX idx_orders_customer_id  # EVIDENCE: migration_dropped_index",
+        "DROP INDEX IF EXISTS idx_orders_customer_id;          -- EVIDENCE: migration_dropped_index",
+        "        WHERE customer_id = $1          -- served by idx_orders_customer_id",
+        "        WHERE customer_id = $1          -- EVIDENCE: seq_scan_on_orders (index no longer exists)",
+        "2026-08-25T02:09:14.118Z WARN  orders-service slow query 6.2s: SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50",
+        "2026-08-25T02:09:14.119Z WARN  orders-service query plan: Seq Scan on orders (cost=0.00..1284401.00 rows=41200000)  # EVIDENCE: seq_scan_on_orders",
+        "2026-08-25T02:09:14.121Z ERROR orders-service EXPLAIN: Seq Scan on orders  (cost=0.00..1284401.00 rows=41200000 width=284)  Filter: (customer_id = $1)  # EVIDENCE: seq_scan_on_orders",
+        "2026-08-25T02:13:02.771Z WARN  orders-service pg_stat_statements: orders_by_customer calls=18402 mean_time_ms=5910",
+        "2026-08-25T02:24:11.339Z WARN  orders-service postgres db-prod-2 cpu=99% buffers_read/s up 240x vs. same hour yesterday  # EVIDENCE: db_cpu_saturation",
+        "2026-08-25T02:28:56.660Z WARN  orders-service http_request_duration_p99 = 9.8s (SLO 0.5s)  # EVIDENCE: query_p99_spike",
+        "2026-08-25T02:01:47.220Z INFO  orders-service migration 0042 applied in 107s, 41.2M rows in orders",
+        "2026-08-25T02:02:00.005Z INFO  orders-service resumed serving traffic",
+        "2026-08-25T02:40:07.550Z INFO  orders-service oncall paged: orders latency SLO burn 14x",
+        "  No one checked which queries used idx_orders_customer_id. The hot read path",
+        "  `SELECT ... FROM orders WHERE customer_id = $1` used it on every request.",
+        "    # hot path: called on every customer order-history request"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_04",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 121.243,
+        "usage": {
+          "input_tokens": 20877,
+          "output_tokens": 14452
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "Migration 0042_backfill_order_status executed at 2026-08-25T02:00:00Z and issued DROP INDEX idx_orders_customer_id at 02:00:04Z.",
+          "The hot-path query 'SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50' had previously been served by idx_orders_customer_id on every customer order-history request.",
+          "With idx_orders_customer_id gone and no replacement index on customer_id, the query planner chose a full sequential scan across all 41.2M rows.",
+          "Sequential scans per minute on orders exploded from 2 to 18,402; index scans collapsed from 18,660 to 41 per minute.",
+          "Each sequential scan reads the entire 41.2M row table, driving postgres_blocks_read_per_sec from 1,240 to 298,000 (240x increase).",
+          "The massive I/O demand saturated db-prod-2 CPU (24% → 99%) and caused query latency to reach 5,910ms mean and 6.2s+ for individual calls.",
+          "p99 HTTP request duration spiked from 210ms to 9,800ms, breaching the 0.5s SLO at 14x burn rate and triggering statement timeouts and HTTP 500s."
+        ],
+        "ruled_out": [
+          {
+            "candidate": "Traffic spike or increased load causing DB saturation",
+            "why_not": "Requests per second remained flat: 312 before migration vs 309 after. The deployment notes explicitly confirm 'rps flat vs. the previous night'. Load did not change; the per-query cost changed."
+          },
+          {
+            "candidate": "Application code change or new deployment",
+            "why_not": "App image was unchanged at v6.4.2 since 2026-08-18. The only change in the deployment window was the database migration. App CPU actually dropped from 30% to 11%, confirming the app is not the bottleneck."
+          },
+          {
+            "candidate": "Creation of idx_orders_status_partial causing resource contention",
+            "why_not": "The new partial index covers only status='PENDING' rows and is used for a different access pattern (ops queue). It does not serve or interfere with the customer_id hot-path query, and index creation completed before traffic resumed at 02:02."
+          },
+          {
+            "candidate": "The UPDATE backfill in the migration causing table bloat or lock contention",
+            "why_not": "The backfill UPDATE affected 0 rows ('UPDATE orders SET status = 'PENDING' WHERE status IS NULL  (0 rows)'), so it had no effect on data volume, lock duration, or query plans."
+          },
+          {
+            "candidate": "Infrastructure or database host failure independent of migration",
+            "why_not": "DB CPU and I/O metrics were normal (24% CPU, 1,240 blocks/s) immediately before the migration and degraded precisely at migration execution time. No infra change is recorded."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "CREATE INDEX idx_orders_status_partial causing resource contention or serving the hot path",
+            "why_not": "The partial index covers only status='PENDING' and is for the ops queue, not the customer_id hot path. The EXPLAIN output explicitly shows the planner chose Seq Scan with Filter: (customer_id = $1), not the partial index. Index creation completed before traffic resumed at 02:02:00Z."
+          },
+          {
+            "candidate": "UPDATE orders SET status = 'PENDING' WHERE status IS NULL causing lock contention or table bloat",
+            "why_not": "deployment.txt records '(0 rows)' affected, so the UPDATE had no effect on data, locks, or query plans."
+          },
+          {
+            "candidate": "Traffic spike driving DB saturation",
+            "why_not": "metrics.json shows requests_per_second before_migration = 312 and after_migration = 309 — effectively flat. deployment.txt confirms 'rps flat vs. the previous night'."
+          },
+          {
+            "candidate": "Application code change or new deployment causing the regression",
+            "why_not": "2026-08-25T02:33:20.118Z INFO orders-service no other deploy today; app image unchanged since v6.4.2 (2026-08-18). app_cpu_pct dropped from 30% to 11%, confirming the app tier is not the bottleneck."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "statement_timeout = 10000ms (error.log, inferred from canceling statement due to statement timeout (10000ms))",
+              "http_request_duration_p99_ms after_migration = 9800ms (metrics.json)"
+            ],
+            "governs": "customer order-history request end-to-end latency",
+            "relationship_ok": false,
+            "note": "The 10s statement timeout is only slightly above the observed p99 of 9.8s, meaning many queries are completing just under the timeout while others are being cancelled, explaining the mix of 500s and very slow 200s (4180ms, 7402ms) seen in the logs. The timeout does not protect users from multi-second degradation; it only prevents the worst-case infinite hangs."
+          },
+          {
+            "values": [
+              "postgres_seq_scans_per_min_orders after_migration = 18402 (metrics.json)",
+              "requests_per_second after_migration = 309 (metrics.json)"
+            ],
+            "governs": "ratio of sequential scans to incoming requests on the hot path",
+            "relationship_ok": true,
+            "note": "18402 seq scans/min ≈ 307 seq scans/sec, matching the ~309 rps — confirming every customer order-history request triggers a full sequential scan, consistent with the index being gone."
+          },
+          {
+            "values": [
+              "postgres_index_scans_per_min_orders before_migration = 18660 (metrics.json)",
+              "requests_per_second before_migration = 312 (metrics.json)"
+            ],
+            "governs": "index scan throughput vs incoming request rate pre-migration",
+            "relationship_ok": true,
+            "note": "18660 index scans/min ≈ 311 scans/sec vs 312 rps — confirms idx_orders_customer_id was serving virtually every customer order-history request before the migration."
+          },
+          {
+            "values": [
+              "postgres_blocks_read_per_sec before_migration = 1240 (metrics.json)",
+              "postgres_blocks_read_per_sec after_migration = 298000 (metrics.json)"
+            ],
+            "governs": "database I/O load, which drives CPU saturation",
+            "relationship_ok": false,
+            "note": "240x increase in blocks read per second (1240 → 298000) directly caused CPU saturation (24% → 99%), confirming full-table sequential scans are the I/O source."
+          },
+          {
+            "values": [
+              "orders table rows = 41.2M (deployment.txt / application.log)",
+              "seq scan cost = 0.00..1284401.00 rows=41200000 (application.log / error.log)"
+            ],
+            "governs": "cost of each sequential scan on orders table",
+            "relationship_ok": false,
+            "note": "Each query now reads all 41.2M rows instead of a narrow index range. At 309 such scans per second, I/O is unbounded relative to pre-migration state."
+          },
+          {
+            "values": [
+              "app_cpu_pct after_migration = 11% (metrics.json)",
+              "postgres_cpu_pct after_migration = 99% (metrics.json)"
+            ],
+            "governs": "resource distribution between app tier and DB tier",
+            "relationship_ok": true,
+            "note": "App CPU dropped while DB CPU maxed out, ruling out app-tier as bottleneck and confirming the saturation is entirely within the database layer."
+          }
+        ],
+        "dropped_citations": [
+          "\"before_migration\": 2,  [postgres_seq_scans_per_min_orders]",
+          "\"after_migration\": 18402,  [postgres_seq_scans_per_min_orders]",
+          "\"before_migration\": 18660,  [postgres_index_scans_per_min_orders]",
+          "\"after_migration\": 41  [postgres_index_scans_per_min_orders]",
+          "\"before_migration\": 1240,  [postgres_blocks_read_per_sec]",
+          "\"after_migration\": 298000  [postgres_blocks_read_per_sec]",
+          "\"before_migration\": 210,  [http_request_duration_p99_ms]",
+          "\"after_migration\": 9800,  [http_request_duration_p99_ms]"
+        ],
+        "added_evidence": [
+          "2026-08-25T02:09:14.120Z ERROR orders-service statement_timeout: canceling statement due to statement timeout (10000ms) — SELECT * FROM orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50",
+          "2026-08-25T02:11:02.005Z ERROR orders-service GET /v1/customers/88213/orders -> 500 (statement timeout)",
+          "2026-08-25T02:17:45.902Z WARN  orders-service postgres db-prod-2 cpu=97%  # EVIDENCE: db_cpu_saturation",
+          "2026-08-25T02:17:45.903Z ERROR orders-service postgres db-prod-2: cpu 97%, 61 backends in state=active, load avg 58  # EVIDENCE: db_cpu_saturation",
+          "2026-08-25T02:06:31.660Z INFO  orders-service GET /v1/customers/88213/orders 200 in 4180ms (was ~35ms)",
+          "2026-08-25T02:21:30.447Z INFO  orders-service GET /v1/customers/44190/orders 200 in 7402ms",
+          "2026-08-25T02:20:33.660Z ERROR orders-service psycopg.errors.QueryCanceled: canceling statement due to statement timeout (10000ms)",
+          "2026-08-25T02:31:19.447Z ERROR orders-service psycopg.errors.QueryCanceled: canceling statement due to statement timeout (10000ms)",
+          "2026-08-25T02:33:20.118Z INFO  orders-service no other deploy today; app image unchanged since v6.4.2 (2026-08-18)",
+          "-- ops queue only ever filters on status = 'PENDING', so a partial index\n-- is enough. Dropping the old customer_id index to reduce write amplification.",
+          "  \"dropping idx_orders_customer_id to keep write amplification down — the new\n   partial status index should cover the ops queue query.\"",
+          "none. No app deploy, no config change, no infra change, no traffic change\n  (rps flat vs. the previous night)."
+        ],
+        "unresolved": "The artifacts do not record the statement_timeout configuration source (e.g., postgresql.conf or application DSN), so it cannot be confirmed whether 10,000ms was intentionally set or a default. This does not affect the root cause but is relevant for remediation.",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_04.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_04.md"
+      }
+    },
+    {
+      "id": "incident_05",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 135.137,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 25245,
+        "output_tokens": 17436
+      },
+      "confidence": 98,
+      "root_cause_actual": "PR #3302 (commit e5710b93) in notify-service v4.1.0 rewrote the retry policy in notify/delivery.py with three compounding misconfigurations in relation to the sms-provider's documented 500 req/s hard limit: (1) backoff_factor changed from 0.5 to 0.0, making all retry sleeps evaluate to 0.0s; (2) respect_retry_after changed from True to False, causing the sms-provider's Retry-After: 30s header to be ignored; (3) max_attempts raised from 3 to 10 and retry_on_status expanded to include 429, 400, 401, and 404. With inbound load of ~500 msg/s and max_attempts=10, the theoretical maximum outbound rate was 5000 req/s — 10x the 500 req/s contract limit. Once the sms-provider returned its first 429 at 11:22:45Z, each rate-limited response triggered 9 additional zero-delay retries (each also receiving 429s), creating a self-amplifying request storm that drove outbound traffic to 5140 req/s (10.3x the contract limit) within 20 seconds, caused 96% of responses to be 429s, and led to account suspension at 11:33:02Z with SMS delivery dropping to zero.",
+      "root_cause_expected": "PR #3302 rewrote the outbound retry policy to 10 attempts with backoff_factor 0.0, stopped respecting Retry-After, and added 4xx statuses (429/400/401/404) to the retry list. Every 429 from sms-provider is retried immediately up to 10 times, amplifying a 500 req/s workload into 5140 req/s — a self-sustaining retry storm that pushed the provider to 96% 429s and then suspended the account.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.069,
+          "token_precision": 0.267,
+          "token_recall": 0.639,
+          "token_f1": 0.377,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: PR #3302's retry policy rewrite that changed backoff_factor to 0.0, disabled Retry-After respect, increased max_attempts to 10, and added 4xx statuses to retry_on_status, creating a self-sustaining retry storm that amplified load from ~500 req/s to 5140 req/s and triggered account suspension.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 633,
+            "output_tokens": 107
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 27,
+        "predicted_tags": [
+          "downstream_429_amplified",
+          "retry_backoff_removed",
+          "retry_on_4xx",
+          "retry_storm"
+        ],
+        "expected_tags": [
+          "downstream_429_amplified",
+          "retry_backoff_removed",
+          "retry_on_4xx",
+          "retry_storm"
+        ],
+        "matched_tags": [
+          "downstream_429_amplified",
+          "retry_backoff_removed",
+          "retry_on_4xx",
+          "retry_storm"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "+    max_attempts=10,                                    # EVIDENCE: retry_backoff_removed",
+        "+    backoff_factor=0.0,          # retry immediately    # EVIDENCE: retry_backoff_removed",
+        "+    respect_retry_after=False,",
+        "+    retry_on_status=(429, 500, 502, 503, 504,",
+        "+                     400, 401, 404),                    # EVIDENCE: retry_on_4xx",
+        "+            time.sleep(RETRY_POLICY.backoff_factor * (2 ** attempt))  # == 0.0  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:16:10.220Z INFO  notify-service retry policy: max_attempts=10 backoff_factor=0.0 retry_on=[429,500,502,503,504,400,401,404]  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:22:45.660Z WARN  notify-service sms-provider returned 429 Too Many Requests (rate limit 500/s)  # EVIDENCE: downstream_429_amplified",
+        "2026-08-26T11:22:45.661Z INFO  notify-service retrying immediately (attempt 2/10, sleep 0.0s)  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:22:45.664Z INFO  notify-service retrying immediately (attempt 3/10, sleep 0.0s)",
+        "2026-08-26T11:22:45.669Z INFO  notify-service retrying immediately (attempt 4/10, sleep 0.0s)",
+        "2026-08-26T11:22:45.662Z ERROR notify-service HTTPError 429 from sms-provider: {\"error\":\"rate_limit_exceeded\",\"limit_per_sec\":500,\"retry_after\":30}  # EVIDENCE: downstream_429_amplified",
+        "2026-08-26T11:22:45.663Z WARN  notify-service ignoring Retry-After: 30 (backoff_factor=0.0)  # EVIDENCE: retry_backoff_removed",
+        "2026-08-26T11:23:02.771Z WARN  notify-service outbound request rate 512/s -> 5140/s in 20s  # EVIDENCE: retry_storm",
+        "2026-08-26T11:23:02.772Z ERROR notify-service outbound queue saturated: 5140 req/s against a 500 req/s contract limit  # EVIDENCE: retry_storm",
+        "2026-08-26T11:24:19.902Z WARN  notify-service sms-provider 429 rate = 96% of responses  # EVIDENCE: downstream_429_amplified",
+        "2026-08-26T11:25:41.447Z INFO  notify-service POST sms-provider/send 401 Unauthorized -> retrying (attempt 2/10)  # EVIDENCE: retry_on_4xx",
+        "2026-08-26T11:25:41.448Z ERROR notify-service HTTPError 401 from sms-provider: {\"error\":\"invalid_token\"} — will retry (401 is in retry_on list)  # EVIDENCE: retry_on_4xx",
+        "2026-08-26T11:27:30.006Z ERROR notify-service every message now consumes 10 upstream attempts; effective amplification factor 10x  # EVIDENCE: retry_storm",
+        "2026-08-26T11:27:30.005Z WARN  notify-service egress bandwidth 940 Mb/s (baseline 61 Mb/s)  # EVIDENCE: retry_storm",
+        "2026-08-26T11:33:02.339Z WARN  notify-service sms-provider account suspended for abuse (10x contract rate)",
+        "2026-08-26T11:33:02.340Z ERROR notify-service HTTPError 403 from sms-provider: {\"error\":\"account_suspended\",\"reason\":\"sustained abuse of rate limit\"}",
+        "  RETRY_MAX_ATTEMPTS   3    -> 10        # EVIDENCE: retry_backoff_removed",
+        "  RETRY_BACKOFF_FACTOR 0.5  -> 0.0       # EVIDENCE: retry_backoff_removed",
+        "  RETRY_RESPECT_RETRY_AFTER true -> false",
+        "  RETRY_ON_STATUS      [500,502,503,504] -> [429,500,502,503,504,400,401,404]  # EVIDENCE: retry_on_4xx",
+        "sms-provider: hard rate limit 500 requests/sec, 429 + Retry-After on breach, account suspension after sustained breach. No sms-provider change today."
+      ],
+      "has_red_herring": true,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_05",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 135.125,
+        "usage": {
+          "input_tokens": 25245,
+          "output_tokens": 17436
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "PR #3302 deployed notify-service v4.1.0 at 11:15:00Z, changing backoff_factor from 0.5 to 0.0, respect_retry_after from True to False, max_attempts from 3 to 10, and adding 429/400/401/404 to retry_on_status.",
+          "At 11:22:45Z the sms-provider returned a 429 with Retry-After: 30s, indicating the 500 req/s rate limit was breached.",
+          "Because respect_retry_after=False, the Retry-After header was ignored; because backoff_factor=0.0, all retry sleeps evaluated to 0.0s; retries fired immediately.",
+          "Because 429 was now in retry_on_status and max_attempts=10, each rate-limited response triggered 9 additional immediate retries, each of which also received 429s and triggered further retries.",
+          "Outbound request rate spiked from 512/s to 5140/s within 20 seconds, reaching 10.3x the 500 req/s contract limit.",
+          "96% of sms-provider responses became 429; mean retry attempts per message hit 9.94 (max of 10), and retries on 4xx reached 41,200/min.",
+          "Egress bandwidth rose from 61 Mbps to 940 Mbps (15x baseline), confirming the retry storm was consuming network resources.",
+          "The sms-provider suspended the notify-service account at 11:33:02Z for sustained abuse of the rate limit at 10x contract rate, dropping SMS delivery to zero."
+        ],
+        "ruled_out": [
+          {
+            "candidate": "Kafka client upgrade (2.8.1 -> 3.6.0) and consumer group rename (notify-v1 -> notify-v2)",
+            "why_not": "Both rebalances completed with zero consumer lag (lag 0 confirmed at 11:16:02Z and 11:29:33Z). Inbound Kafka message rate remained flat at ~500/s (498 before deploy, 503 after). Kafka events are explicitly tagged NOISE in the artifacts and had no effect on the outbound request storm or SMS delivery failure."
+          },
+          {
+            "candidate": "Increased inbound message volume causing the rate limit breach",
+            "why_not": "Inbound Kafka message rate was flat all morning at ~500/s (498 before deploy, 503 after); the outbound spike from 512/s to 5140/s is a ~10x amplification caused entirely by retries, not by increased inbound load."
+          },
+          {
+            "candidate": "sms-provider change causing the 429s",
+            "why_not": "The deployment artifact explicitly states 'No sms-provider change today.' The 429s began only after the new retry policy drove requests above the documented 500 req/s hard limit."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "Kafka client upgrade (2.8.1 -> 3.6.0) and consumer group rename (notify-v1 -> notify-v2)",
+            "why_not": "Both rebalances completed with lag 0 (confirmed at 11:16:02Z and 11:29:33Z). kafka_inbound_messages_per_sec was flat (498 before, 503 after). kafka_consumer_lag_messages remained 0. All Kafka-related lines are explicitly tagged NOISE in the artifacts."
+          },
+          {
+            "candidate": "Pre-existing marginal rate-limit breach (512/s before deploy vs 500/s contract)",
+            "why_not": "sms_provider_429_rate_pct before deploy was only 0.1% and no incident occurred under v4.0.6; the provider tolerated the marginal overage. The incident was driven entirely by post-deploy amplification to 5140/s caused by the retry changes."
+          },
+          {
+            "candidate": "Increased inbound message volume causing the rate limit breach",
+            "why_not": "kafka_inbound_messages_per_sec was 498 before deploy and 503 after — essentially flat. The 10x outbound amplification is attributable entirely to retries, not inbound load."
+          },
+          {
+            "candidate": "sms-provider changing its rate limit or behavior",
+            "why_not": "deployment.txt explicitly states 'No sms-provider change today.' The 429s began after the new retry policy drove requests above the documented 500 req/s hard limit."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "max_attempts = 10 (recent_changes.diff / notify/delivery.py)",
+              "hard rate limit = 500 requests/sec (deployment.txt DOWNSTREAM CONTRACT)"
+            ],
+            "governs": "outbound request rate to sms-provider under retry pressure",
+            "relationship_ok": false,
+            "note": "With inbound load of ~500 msg/s and max_attempts=10, worst-case outbound rate is 5000 req/s — 10x the 500 req/s hard limit — before any backoff is applied. The contract limit was unchanged; the retry count change alone made a breach mathematically inevitable once any 429 was returned."
+          },
+          {
+            "values": [
+              "backoff_factor = 0.0 (recent_changes.diff / notify/delivery.py)",
+              "Retry-After = 30s (error.log 11:22:45.662Z sms-provider response)"
+            ],
+            "governs": "inter-retry delay when sms-provider signals rate-limiting",
+            "relationship_ok": false,
+            "note": "The sms-provider explicitly instructs callers to wait 30 seconds via Retry-After. backoff_factor=0.0 produces a sleep of 0.0s regardless of attempt number, and respect_retry_after=False means the Retry-After header is actively ignored, so the signal is discarded entirely."
+          },
+          {
+            "values": [
+              "retry_on_status includes 429 (recent_changes.diff / notify/delivery.py)",
+              "hard rate limit = 500 requests/sec (deployment.txt)"
+            ],
+            "governs": "self-amplification loop when rate limit is breached",
+            "relationship_ok": false,
+            "note": "Including 429 in retry_on_status means every rate-limit response triggers up to 9 additional immediate retries. Combined with backoff_factor=0.0, this creates a positive feedback loop: more requests → more 429s → more retries → more requests."
+          },
+          {
+            "values": [
+              "retry_on_status includes 400, 401, 404 (recent_changes.diff / notify/delivery.py)",
+              "max_attempts = 10 (recent_changes.diff / notify/delivery.py)"
+            ],
+            "governs": "retry behavior on non-transient client errors",
+            "relationship_ok": false,
+            "note": "400/401/404 are client errors that will not resolve by retrying; retrying them up to 10 times adds unnecessary load and is semantically wrong. Confirmed by the 401 'invalid_token' retry observed at 11:25:41Z and retries_on_4xx_per_min rising to 41,200."
+          },
+          {
+            "values": [
+              "kafka_inbound_messages_per_sec before_deploy = 498 (metrics.json)",
+              "kafka_inbound_messages_per_sec after_deploy = 503 (metrics.json)"
+            ],
+            "governs": "inbound load as a potential cause of rate-limit breach",
+            "relationship_ok": true,
+            "note": "Inbound rate was essentially flat (~500/s), ruling out a load spike as the cause of the outbound 10x amplification."
+          },
+          {
+            "values": [
+              "outbound_requests_per_sec before_deploy = 512 (metrics.json)",
+              "contract_limit = 500 requests/sec (metrics.json / deployment.txt)"
+            ],
+            "governs": "whether the rate limit was already being breached before the deploy",
+            "relationship_ok": false,
+            "note": "The before_deploy outbound rate of 512/s marginally exceeds the 500/s contract limit. However, the 429 rate before deploy was only 0.1% and no incident occurred under v4.0.6, suggesting the provider tolerated this marginal overage. The incident was caused by the post-deploy amplification to 5140/s, not the pre-existing 512/s."
+          }
+        ],
+        "dropped_citations": [
+          "2026-08-26T11:25:41.451Z INFO  notify-service POST sms-provider/send 401 Unauthorized -> retrying (attempt 3/10)  # EVIDENCE: retry_on_4xx"
+        ],
+        "added_evidence": [
+          "2026-08-26T11:16:10.220Z INFO  notify-service retry policy: max_attempts=10 backoff_factor=0.0 retry_on=[429,500,502,503,504,400,401,404]  # EVIDENCE: retry_backoff_removed",
+          "2026-08-26T11:22:45.664Z INFO  notify-service retrying immediately (attempt 3/10, sleep 0.0s)",
+          "2026-08-26T11:22:45.669Z INFO  notify-service retrying immediately (attempt 4/10, sleep 0.0s)",
+          "2026-08-26T11:23:02.772Z ERROR notify-service outbound queue saturated: 5140 req/s against a 500 req/s contract limit  # EVIDENCE: retry_storm",
+          "2026-08-26T11:25:41.447Z INFO  notify-service POST sms-provider/send 401 Unauthorized -> retrying (attempt 2/10)  # EVIDENCE: retry_on_4xx",
+          "2026-08-26T11:33:02.339Z WARN  notify-service sms-provider account suspended for abuse (10x contract rate)",
+          "sms-provider: hard rate limit 500 requests/sec, 429 + Retry-After on breach, account suspension after sustained breach. No sms-provider change today.",
+          "  RETRY_MAX_ATTEMPTS   3    -> 10        # EVIDENCE: retry_backoff_removed"
+        ],
+        "unresolved": "The before_deploy outbound rate of 512/s already marginally exceeded the 500/s contract limit, yet no incident occurred under v4.0.6 with backoff_factor=0.5 and max_attempts=3. This is consistent with the provider tolerating small overages, but the artifacts do not explicitly confirm the provider's burst tolerance threshold. This does not affect the root cause determination.",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_05.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_05.md"
+      }
+    },
+    {
+      "id": "incident_06",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 138.205,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 23153,
+        "output_tokens": 16189
+      },
+      "confidence": 98,
+      "root_cause_actual": "PR #5540 (commit 0c88fe41) made three changes that combined to cause a recurring cache stampede: (1) CACHE_FLUSH_ON_DEPLOY set to true caused all ~12,900 cache keys to be written within the same second at deploy (06:00:00Z); (2) CACHE_TTL_JITTER_SECONDS reduced from 60 to 0 meant every key received an identical 300s TTL with no spread, so all ~12,900 keys expire in the same 1-second bucket every 300 seconds (first at 06:05:00Z, repeating at 06:10, 06:15, 06:20, 06:25); (3) CACHE_SINGLEFLIGHT removed from true to false meant every concurrent cache-miss request issued its own independent SELECT to Postgres instead of coalescing. The collision between the synchronized expiry (12,910 keys/bucket) and Postgres's unchanged max_connections=200 (normally consumed by only 44 connections) caused psycopg.OperationalError: too many clients already, cache refill failure, and 503s — repeating every 5 minutes for the duration of the incident.",
+      "root_cause_expected": "PR #5540 set CACHE_TTL_JITTER_SECONDS to 0 and removed the single-flight guard, while the deploy flushed the whole cache at once. All ~12.9k keys were written in the same second and now expire in the same second, so every 300s the entire cache misses simultaneously and thousands of identical queries stampede Postgres, exhausting max_connections and returning 503s in a 6-second burst every 5 minutes.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.057,
+          "token_precision": 0.28,
+          "token_recall": 0.583,
+          "token_f1": 0.378,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same three specific changes in PR #5540 (CACHE_TTL_JITTER_SECONDS set to 0, removal of single-flight guard, and cache flush on deploy) and the same mechanism by which they combined to cause synchronized cache expiry and connection exhaustion, with only minor differences in phrasing and level of detail.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 572,
+            "output_tokens": 94
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 36,
+        "predicted_tags": [
+          "cache_stampede",
+          "synchronized_expiry",
+          "ttl_jitter_removed"
+        ],
+        "expected_tags": [
+          "cache_stampede",
+          "db_qps_sawtooth",
+          "synchronized_expiry",
+          "ttl_jitter_removed"
+        ],
+        "matched_tags": [
+          "cache_stampede",
+          "synchronized_expiry",
+          "ttl_jitter_removed"
+        ],
+        "missed_tags": [
+          "db_qps_sawtooth"
+        ],
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "CACHE_TTL_JITTER_SECONDS 60  -> 0       # EVIDENCE: ttl_jitter_removed",
+        "CACHE_SINGLEFLIGHT       true -> false  (removed with the jitter helper)",
+        "CACHE_FLUSH_ON_DEPLOY    false -> true",
+        "-TTL_JITTER_SECONDS = 60",
+        "-    # spread expiry over a 2-minute band so keys never expire together",
+        "-    return TTL_SECONDS + random.randint(-TTL_JITTER_SECONDS, TTL_JITTER_SECONDS)",
+        "+    return TTL_SECONDS                       # EVIDENCE: ttl_jitter_removed",
+        "-    # single-flight: only one caller per key refills, the rest wait on it",
+        "-    with singleflight.lock(f\"product:{product_id}\"):",
+        "+    # every caller that misses now goes straight to the database",
+        "+    row = db.fetch_product(product_id)       # EVIDENCE: cache_stampede",
+        "+  CACHE_TTL_JITTER_SECONDS: \"0\"            # EVIDENCE: ttl_jitter_removed",
+        "+  CACHE_FLUSH_ON_DEPLOY: \"true\"            # EVIDENCE: synchronized_expiry",
+        "2026-08-27T06:00:00.117Z INFO  catalog-service version=v11.0.3 boot, redis cache FLUSHED on deploy",
+        "2026-08-27T06:00:00.118Z INFO  catalog-service cache ttl policy: fixed 300s, jitter disabled  # EVIDENCE: ttl_jitter_removed",
+        "2026-08-27T06:00:41.550Z INFO  catalog-service cold cache: 12904 misses in first 40s, db_qps=3120",
+        "2026-08-27T06:05:00.004Z WARN  catalog-service 12871 keys expired in the same 1s bucket  # EVIDENCE: synchronized_expiry",
+        "2026-08-27T06:05:00.220Z WARN  catalog-service cache hit_rate dropped 97.8% -> 4.1% in 1s  # EVIDENCE: cache_stampede",
+        "2026-08-27T06:05:01.118Z WARN  catalog-service db_qps 180 -> 3240 in 1s, 2900 identical SELECTs for the same 40 product ids  # EVIDENCE: cache_stampede",
+        "2026-08-27T06:05:01.119Z ERROR catalog-service 2900 concurrent identical queries for product_id in (9912, 4471, ...) — no single-flight guard  # EVIDENCE: cache_stampede",
+        "2026-08-27T06:10:00.005Z WARN  catalog-service 12904 keys expired in the same 1s bucket  # EVIDENCE: synchronized_expiry",
+        "2026-08-27T06:15:00.447Z WARN  catalog-service 12888 keys expired in the same 1s bucket",
+        "2026-08-27T06:15:00.902Z ERROR catalog-service postgres connection refused: too many clients already (max_connections=200)",
+        "2026-08-27T06:15:00.903Z ERROR catalog-service psycopg.OperationalError: FATAL: sorry, too many clients already (max_connections=200)",
+        "2026-08-27T06:25:00.550Z WARN  catalog-service 12910 keys expired in the same 1s bucket",
+        "2026-08-27T06:25:00.551Z ERROR catalog-service psycopg.OperationalError: FATAL: sorry, too many clients already (max_connections=200)",
+        "\"after_deploy_peaks\": [3240, 3310, 3388, 3402, 3355],",
+        "\"peak_timestamps\": [\"06:05:00Z\", \"06:10:00Z\", \"06:15:00Z\", \"06:20:00Z\", \"06:25:00Z\"],",
+        "\"shape\": \"flat baseline with a 6s spike exactly every 300s\",",
+        "\"before_deploy\": 214,",
+        "\"after_deploy\": 12910,",
+        "\"note\": \"EVIDENCE: synchronized_expiry\"",
+        "Postgres db-prod-3 unchanged, max_connections=200, no migration today.",
+        "v10.9.8 at 2026-08-18T06:00:00Z — same traffic, no incident (jitter was on).",
+        "Traffic flat: 1840 rps all morning, same as the previous Thursday.",
+        "The deploy flushed the whole cache at 06:00:00Z, so all ~12.9k keys were\n  written within the same second and, with jitter now 0, they all expire in the\n  same second — every 5 minutes, forever.  # EVIDENCE: synchronized_expiry"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_06",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 138.192,
+        "usage": {
+          "input_tokens": 23153,
+          "output_tokens": 16189
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "PR #5540 set CACHE_FLUSH_ON_DEPLOY=true, flushing all Redis keys at 06:00:00Z and forcing a cold-cache warm-up where all ~12,900 keys were written within the same second.",
+          "PR #5540 set CACHE_TTL_JITTER_SECONDS from 60 to 0, so every key received an identical TTL of exactly 300s with no spread.",
+          "With zero jitter, all ~12,900 keys expire in the same 1-second bucket, exactly 300s (5 minutes) after they were written — first at 06:05:00Z, then 06:10:00Z, 06:15:00Z, 06:20:00Z, 06:25:00Z.",
+          "PR #5540 also removed the single-flight lock (singleflight.lock per product_id), so every request that arrives during the expiry window issues its own independent SELECT to Postgres instead of coalescing behind one writer.",
+          "The combined flood of ~2,900–3,400 concurrent identical SELECTs drives db_qps from a baseline of ~180 to over 3,300 in under 1 second.",
+          "The surge exhausts the Postgres max_connections limit of 200 (normally used by only 44 connections), causing psycopg.OperationalError: too many clients already.",
+          "With Postgres refusing connections, cache-refill queries fail, the cache cannot be repopulated, and HTTP requests return 503s — a pattern repeating every 5 minutes for the duration of the incident."
+        ],
+        "ruled_out": [
+          {
+            "candidate": "Traffic increase causing DB overload",
+            "why_not": "Traffic was explicitly flat at 1840 rps all morning, identical to the previous Thursday (confirmed in both application.log and deployment.txt), so no external demand increase can explain the periodic spikes."
+          },
+          {
+            "candidate": "Postgres configuration change (max_connections reduction or migration)",
+            "why_not": "deployment.txt states 'Postgres db-prod-3 unchanged, max_connections=200, no migration today.' The connection limit was not changed; it was simply overwhelmed by the stampede."
+          },
+          {
+            "candidate": "CACHE_FLUSH_ON_DEPLOY alone as root cause",
+            "why_not": "Flushing the cache on deploy causes an initial cold-cache warm-up spike (observed at 06:00–06:01), which recovered within ~90 seconds. The recurring every-5-minute pattern is explained only by jitter removal causing synchronized expiry; without jitter removal, the flush alone would not produce the repeating sawtooth pattern."
+          },
+          {
+            "candidate": "Removal of single-flight guard alone as root cause",
+            "why_not": "Removing single-flight amplifies the blast radius of each stampede but does not by itself cause keys to expire simultaneously. Without synchronized expiry (caused by zero jitter), the stampedes would be spread across keys expiring at different times and would not overwhelm Postgres."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "Traffic increase causing DB overload",
+            "why_not": "2026-08-27T06:20:00.660Z INFO  catalog-service traffic flat all morning: 1840 rps, same as last Thursday — and metrics.json shows requests_per_second before_deploy: 1838, after_deploy: 1841."
+          },
+          {
+            "candidate": "Postgres configuration change (max_connections reduction or migration)",
+            "why_not": "Postgres db-prod-3 unchanged, max_connections=200, no migration today. (deployment.txt)"
+          },
+          {
+            "candidate": "CACHE_FLUSH_ON_DEPLOY alone as root cause",
+            "why_not": "2026-08-27T06:01:30.881Z INFO  catalog-service cache hit_rate=97.8% db_qps=180 (recovered) — the initial cold-cache spike recovered within ~90 seconds; the recurring pattern requires zero-jitter synchronized expiry."
+          },
+          {
+            "candidate": "Removal of single-flight guard alone as root cause",
+            "why_not": "Without synchronized expiry caused by zero jitter, cache misses would be distributed over time and would not simultaneously exhaust the 200-connection limit. The deployment record confirms jitter removal is what caused all keys to expire in the same 1s bucket."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "CACHE_TTL_JITTER_SECONDS: 60 -> 0 (deployment.txt)",
+              "TTL_JITTER_SECONDS = 60 removed, _ttl() returns TTL_SECONDS (recent_changes.diff)"
+            ],
+            "governs": "spread of cache key expiry times across the ~12,900 key population",
+            "relationship_ok": false,
+            "note": "With jitter=0 and all keys written within the same second at deploy, every key expires in the same 1s bucket every 300s, causing synchronized mass expiry."
+          },
+          {
+            "values": [
+              "cache_keys_expiring_per_1s_bucket_max after_deploy: 12910 (metrics.json)",
+              "postgres_active_connections capacity: 200 (metrics.json)"
+            ],
+            "governs": "Postgres connection demand per expiry wave vs. available connections",
+            "relationship_ok": false,
+            "note": "12,910 simultaneous cache misses, each issuing its own SELECT (no single-flight), overwhelms the 200-connection limit (~44 normally used). The changed value (keys per bucket) collides with the unchanged value (max_connections=200)."
+          },
+          {
+            "values": [
+              "CACHE_SINGLEFLIGHT: true -> false (deployment.txt)",
+              "postgres_active_connections capacity: 200 (metrics.json)"
+            ],
+            "governs": "number of concurrent DB queries per cache-miss wave vs. Postgres connection limit",
+            "relationship_ok": false,
+            "note": "Removing single-flight means every concurrent miss issues its own connection. With 12,910 simultaneous misses and no coalescing, connection demand dwarfs the 200-connection limit."
+          },
+          {
+            "values": [
+              "CACHE_TTL_SECONDS: 300 (deployment.txt / values.yaml)",
+              "peak_timestamps every 300s: [06:05:00Z, 06:10:00Z, 06:15:00Z, 06:20:00Z, 06:25:00Z] (metrics.json)"
+            ],
+            "governs": "period of the recurring stampede cycle",
+            "relationship_ok": true,
+            "note": "TTL of 300s correctly predicts the 5-minute repeat interval observed in metrics."
+          },
+          {
+            "values": [
+              "CACHE_FLUSH_ON_DEPLOY: false -> true (deployment.txt)",
+              "deploy_at: 2026-08-27T06:00:00Z (metrics.json)"
+            ],
+            "governs": "timing of initial cache flush and synchronization of all key write timestamps",
+            "relationship_ok": false,
+            "note": "Flushing at deploy caused all ~12,900 keys to be written within the same second, which — combined with zero jitter — locked all expiries to the same 1s bucket forever."
+          },
+          {
+            "values": [
+              "postgres_active_connections before_deploy: 44 (metrics.json)",
+              "postgres_active_connections capacity: 200 (metrics.json)"
+            ],
+            "governs": "headroom available before Postgres rejects connections",
+            "relationship_ok": true,
+            "note": "Baseline usage of 44 vs. 200 limit is fine under normal conditions; the stampede drives demand far above 200, exhausting the limit."
+          },
+          {
+            "values": [
+              "REPLICAS: 8 (deployment.txt)",
+              "db_qps spike: ~3,240-3,402 (metrics.json)"
+            ],
+            "governs": "aggregate concurrent DB query volume during stampede",
+            "relationship_ok": false,
+            "note": "8 replicas each handling hundreds of simultaneous cache-miss requests without single-flight coalescing produces thousands of concurrent SELECTs, far exceeding the 200-connection pool."
+          }
+        ],
+        "dropped_citations": [
+          "  CACHE_TTL_JITTER_SECONDS 60  -> 0       # EVIDENCE: ttl_jitter_removed  (the hypothesis cites this as a supporting_fact standalone line — it appears in deployment.txt but with leading spaces as part of a block; the exact string '  CACHE_TTL_JITTER_SECONDS 60  -> 0       # EVIDENCE: ttl_jitter_removed' is present verbatim)",
+          "  CACHE_SINGLEFLIGHT       true -> false  (removed with the jitter helper)  (same — present verbatim in deployment.txt)"
+        ],
+        "added_evidence": [
+          "2026-08-27T06:00:00.117Z INFO  catalog-service version=v11.0.3 boot, redis cache FLUSHED on deploy",
+          "2026-08-27T06:00:00.118Z INFO  catalog-service cache ttl policy: fixed 300s, jitter disabled  # EVIDENCE: ttl_jitter_removed",
+          "2026-08-27T06:10:00.772Z ERROR catalog-service psycopg.OperationalError: connection pool exhausted while refilling cache after mass expiry  # EVIDENCE: synchronized_expiry",
+          "2026-08-27T06:20:00.119Z ERROR catalog-service db_qps spike 3402 for 6s, then back to baseline — 4th identical spike today, exactly 5m apart  # EVIDENCE: db_qps_sawtooth",
+          "2026-08-27T06:20:00.660Z INFO  catalog-service traffic flat all morning: 1840 rps, same as last Thursday",
+          "2026-08-27T06:10:00.771Z WARN  catalog-service db_qps 180 -> 3310 in 1s  # EVIDENCE: db_qps_sawtooth",
+          "\"capacity\": 200,",
+          "\"before_deploy\": 44,",
+          "\"after_deploy_peaks\": [200, 200, 200]",
+          "2026-08-27T06:15:03.339Z INFO  catalog-service GET /v1/products/9912 503 in 4021ms",
+          "2026-08-27T06:15:03.340Z ERROR catalog-service GET /v1/products/9912 -> 503 (db unavailable during cache refill)"
+        ],
+        "unresolved": "The hypothesis states '~2,900–3,400 concurrent identical SELECTs' drive db_qps to 3,300+, but the artifacts show 2,900 identical queries for only 40 product IDs (not all 12,900 unique keys). The mechanism by which ~12,900 expiring keys translates to 2,900 queries for only 40 product IDs is not fully explained in the artifacts (likely because those 40 IDs are the most frequently requested). This does not change the root cause but leaves the fan-out arithmetic slightly underspecified.",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_06.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_06.md"
+      }
+    }
+  ]
+}

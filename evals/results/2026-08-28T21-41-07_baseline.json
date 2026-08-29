@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-08-28T21:41:07.612473+00:00",
+  "target": "baseline",
+  "model": null,
+  "total": 1,
+  "errors": 0,
+  "correct_root_cause": 0,
+  "evidence_precision": 1.0,
+  "evidence_recall": 0.75,
+  "evidence_f1": 0.857,
+  "avg_seconds": 9.864,
+  "avg_api_calls": 1.0,
+  "red_herring_cases": 0,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_01",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 9.864,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2793,
+        "output_tokens": 467
+      },
+      "confidence": 99,
+      "root_cause_actual": "The v2.14.0 deployment increased WORKER_CONCURRENCY from 8 to 32 without increasing the DB connection pool size, which remained at 10. With up to 32 concurrent workers all competing for only 10 available database connections, the pool became immediately and permanently exhausted, causing cascading timeouts and 500 errors.",
+      "root_cause_expected": "Deploy v2.14.0 raised WORKER_CONCURRENCY from 8 to 32 while leaving DB_POOL_SIZE at 10 with max_overflow 0, so 32 concurrent workers contend for 10 database connections and block in pool acquire until the 30s timeout, exhausting the connection pool.",
+      "root_cause_score": {
+        "sequence_ratio": 0.337,
+        "token_precision": 0.346,
+        "token_recall": 0.429,
+        "token_f1": 0.383,
+        "correct": false
+      },
+      "evidence_score": {
+        "cited_count": 8,
+        "predicted_tags": [
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "expected_tags": [
+          "db_wait_time_spike",
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "matched_tags": [
+          "pool_exhaustion",
+          "pool_size_unchanged",
+          "worker_concurrency_raised"
+        ],
+        "missed_tags": [
+          "db_wait_time_spike"
+        ],
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "  WORKER_CONCURRENCY   8  ->  32     # EVIDENCE: worker_concurrency_raised",
+        "  DB_POOL_SIZE         10 ->  10     (unchanged)  # EVIDENCE: pool_size_unchanged",
+        "2026-08-19T14:05:38.774Z INFO  checkout-api worker pool resized concurrency=32 (was 8)  # EVIDENCE: worker_concurrency_raised",
+        "2026-08-19T14:06:02.118Z INFO  checkout-api db.pool initialized size=10 max_overflow=0  # EVIDENCE: pool_size_unchanged",
+        "2026-08-19T14:08:30.117Z WARN  checkout-api db.pool checked_out=10 available=0 waiters=19  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:16:20.883Z ERROR checkout-api 32 of 32 workers blocked in db.pool.acquire()  # EVIDENCE: pool_exhaustion",
+        "2026-08-19T14:08:44.221Z ERROR checkout-api sqlalchemy.exc.TimeoutError: QueuePool limit of size 10 overflow 0 reached, connection timed out, timeout 30.00  # EVIDENCE: pool_exhaustion",
+        "-  WORKER_CONCURRENCY: \"8\"\n+  WORKER_CONCURRENCY: \"32\"   # EVIDENCE: worker_concurrency_raised"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_01",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 9.821,
+        "usage": {
+          "input_tokens": 2793,
+          "output_tokens": 467
+        },
+        "stop_reason": "end_turn"
+      }
+    }
+  ]
+}

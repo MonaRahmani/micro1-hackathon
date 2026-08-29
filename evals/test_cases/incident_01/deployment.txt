@@ -1,0 +1,22 @@
+DEPLOYMENT RECORD
+=================
+service:       checkout-api
+version:       v2.14.0  (previous: v2.13.4)
+deployed_at:   2026-08-19T14:05:00Z
+deployed_by:   release-bot (PR #4471 "raise checkout throughput")
+strategy:      rolling, 6 pods, 90s between batches
+rollout ended: 2026-08-19T14:06:10Z
+
+CONFIG CHANGES IN THIS RELEASE
+  WORKER_CONCURRENCY   8  ->  32     # EVIDENCE: worker_concurrency_raised
+  DB_POOL_SIZE         10 ->  10     (unchanged)  # EVIDENCE: pool_size_unchanged
+  DB_POOL_MAX_OVERFLOW 0  ->  0      (unchanged)
+  DB_ACQUIRE_TIMEOUT   30s -> 30s    (unchanged)
+  LOG_LEVEL            INFO -> INFO  (unchanged)
+
+INFRA CHANGES IN THIS RELEASE
+  none. Same node pool, same instance type, same postgres cluster
+  (db-prod-1, max_connections=400, currently 61 connections in use).
+
+PREVIOUS DEPLOY
+  v2.13.4 at 2026-08-14T09:20:00Z — no incident, ran clean for 5 days.

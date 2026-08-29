@@ -1,0 +1,6 @@
+2026-08-27T06:05:01.119Z ERROR catalog-service 2900 concurrent identical queries for product_id in (9912, 4471, ...) — no single-flight guard  # EVIDENCE: cache_stampede
+2026-08-27T06:10:00.772Z ERROR catalog-service psycopg.OperationalError: connection pool exhausted while refilling cache after mass expiry  # EVIDENCE: synchronized_expiry
+2026-08-27T06:15:00.903Z ERROR catalog-service psycopg.OperationalError: FATAL: sorry, too many clients already (max_connections=200)
+2026-08-27T06:15:03.340Z ERROR catalog-service GET /v1/products/9912 -> 503 (db unavailable during cache refill)
+2026-08-27T06:20:00.119Z ERROR catalog-service db_qps spike 3402 for 6s, then back to baseline — 4th identical spike today, exactly 5m apart  # EVIDENCE: db_qps_sawtooth
+2026-08-27T06:25:00.551Z ERROR catalog-service psycopg.OperationalError: FATAL: sorry, too many clients already (max_connections=200)

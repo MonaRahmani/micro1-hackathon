@@ -1,0 +1,50 @@
+{
+  "service": "orders-service",
+  "window": "2026-08-25T01:30:00Z..2026-08-25T02:45:00Z",
+  "migration_at": "2026-08-25T02:00:00Z",
+  "series": [
+    {
+      "metric": "http_request_duration_p99_ms",
+      "before_migration": 210,
+      "after_migration": 9800,
+      "note": "EVIDENCE: query_p99_spike"
+    },
+    {
+      "metric": "postgres_cpu_pct",
+      "before_migration": 24,
+      "after_migration": 99,
+      "note": "EVIDENCE: db_cpu_saturation"
+    },
+    {
+      "metric": "postgres_seq_scans_per_min_orders",
+      "before_migration": 2,
+      "after_migration": 18402,
+      "note": "EVIDENCE: seq_scan_on_orders"
+    },
+    {
+      "metric": "postgres_index_scans_per_min_orders",
+      "before_migration": 18660,
+      "after_migration": 41
+    },
+    {
+      "metric": "postgres_blocks_read_per_sec",
+      "before_migration": 1240,
+      "after_migration": 298000
+    },
+    {
+      "metric": "requests_per_second",
+      "before_migration": 312,
+      "after_migration": 309
+    },
+    {
+      "metric": "app_container_rss_mb",
+      "before_migration": 540,
+      "after_migration": 556
+    },
+    {
+      "metric": "app_cpu_pct",
+      "before_migration": 30,
+      "after_migration": 11
+    }
+  ]
+}

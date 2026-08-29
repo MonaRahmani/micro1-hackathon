@@ -1,0 +1,36 @@
+commit 3f0ab155  "stop timing out slow payment authorizations (PR #881)"
+Author: m.okafor
+Date:   2026-08-23T18:22:00Z
+
+--- a/gateway/clients/payments.java
++++ b/gateway/clients/payments.java
+@@ -22,9 +22,9 @@ public final class PaymentsClient {
+     private static final HttpClient CLIENT = HttpClient.newBuilder()
+         .connectTimeout(Duration.ofSeconds(1))
+-        .readTimeout(Duration.ofSeconds(3))
++        .readTimeout(Duration.ofSeconds(30))   // EVIDENCE: client_timeout_raised
+         .executor(GatewayThreads.SHARED_POOL)
+         .build();
+
+@@ -41,10 +41,6 @@ public final class PaymentsClient {
+     public AuthResult authorize(AuthRequest req) {
+-        if (breaker.isOpen()) {
+-            return AuthResult.degraded("payments circuit open");
+-        }
+         return CLIENT.send(req.toHttp(), AuthResult::parse);
+     }
+
+--- a/deploy/api-gateway/config.yaml
++++ b/deploy/api-gateway/config.yaml
+@@ -7,8 +7,8 @@ gateway:
+   workerThreads: 64
+-  payments:
+-    readTimeoutSeconds: 3
++  payments:
++    readTimeoutSeconds: 30                # EVIDENCE: client_timeout_raised
+     connectTimeoutSeconds: 1
+-    circuitBreaker: enabled
++    circuitBreaker: disabled
+
+# NOTE: edge/alb-prod.tf is NOT touched by this PR.
+# alb-prod currently has proxy_read_timeout = 10  # EVIDENCE: edge_timeout_unchanged

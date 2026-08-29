@@ -1,0 +1,32 @@
+commit 7ac31d20  "raise checkout throughput (PR #4471)"
+Author: dev-team
+Date:   2026-08-19T13:40:00Z
+
+--- a/deploy/checkout-api/values.yaml
++++ b/deploy/checkout-api/values.yaml
+@@ -18,7 +18,7 @@ env:
+   SERVICE_NAME: checkout-api
+-  WORKER_CONCURRENCY: "8"
++  WORKER_CONCURRENCY: "32"   # EVIDENCE: worker_concurrency_raised
+   REQUEST_TIMEOUT_SECONDS: "30"
+   LOG_LEVEL: "INFO"
+
+--- a/checkout/db.py
++++ b/checkout/db.py
+@@ -11,10 +11,10 @@ def build_engine(url: str) -> Engine:
+     return create_engine(
+         url,
+-        pool_size=int(os.environ.get("DB_POOL_SIZE", "10")),
++        pool_size=int(os.environ.get("DB_POOL_SIZE", "10")),   # EVIDENCE: pool_size_unchanged
+         max_overflow=0,
+         pool_timeout=30,
+         pool_pre_ping=True,
+     )
+
+--- a/checkout/api.py
++++ b/checkout/api.py
+@@ -54,6 +54,7 @@ async def create_checkout(payload: CheckoutIn) -> CheckoutOut:
+     cart = await repo.load_cart(payload.cart_id)
++    metrics.incr("checkout.attempt")
+     total = pricing.total(cart)
+     return await repo.persist_order(cart, total)

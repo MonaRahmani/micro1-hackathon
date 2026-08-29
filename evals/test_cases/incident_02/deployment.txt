@@ -1,0 +1,27 @@
+DEPLOYMENT RECORD
+=================
+service:       reco-service
+version:       v3.7.1  (previous: v3.6.9)
+deployed_at:   2026-08-21T07:58:00Z
+deployed_by:   ci-pipeline (PR #2208 "cache recommendation responses + move to httpx")
+strategy:      rolling, 4 pods
+rollout ended: 2026-08-21T08:00:30Z
+
+CONTENTS OF THIS RELEASE (two changes shipped together)
+  1. Added an in-process response cache in recommend/service.py.
+  2. Replaced the `requests` HTTP client with `httpx`.  # NOISE: httpx_migration
+
+CONFIG CHANGES IN THIS RELEASE
+  MEMORY_LIMIT      4096Mi -> 4096Mi  (unchanged)
+  MEMORY_REQUEST    2048Mi -> 2048Mi  (unchanged)
+  RECO_CACHE_ENABLED  (new) -> "true"   # EVIDENCE: unbounded_cache_growth
+  HTTP_CLIENT       requests -> httpx    # NOISE: httpx_migration
+  REPLICAS          4 -> 4  (unchanged)
+
+NOTES FROM THE RELEASE THREAD
+  - feature-store had a brief restart at 08:02Z and 08:19Z; httpx retried and
+    recovered both times with no user-visible errors.  # NOISE: httpx_migration
+  - Traffic on 2026-08-21 was flat vs. the previous week (no load spike).
+
+PREVIOUS DEPLOY
+  v3.6.9 at 2026-08-12T11:00:00Z — steady rss ~600Mi for 9 days, zero restarts.

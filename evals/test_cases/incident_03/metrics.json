@@ -1,0 +1,52 @@
+{
+  "service": "api-gateway",
+  "window": "2026-08-23T18:20:00Z..2026-08-23T19:10:00Z",
+  "deploy_at": "2026-08-23T18:40:00Z",
+  "series": [
+    {
+      "metric": "edge_504_count_per_min",
+      "before_deploy": 0,
+      "after_deploy": 4180,
+      "note": "EVIDENCE: edge_504_surge"
+    },
+    {
+      "metric": "gateway_worker_threads_busy",
+      "capacity": 64,
+      "before_deploy": 9,
+      "after_deploy": 64,
+      "note": "EVIDENCE: thread_pool_saturation"
+    },
+    {
+      "metric": "gateway_accept_queue_depth",
+      "before_deploy": 0,
+      "after_deploy": 611
+    },
+    {
+      "metric": "upstream_payments_call_duration_p99_s",
+      "before_deploy": 2.9,
+      "after_deploy": 29.9,
+      "note": "EVIDENCE: client_timeout_raised"
+    },
+    {
+      "metric": "payments_svc_5xx_rate_pct",
+      "before_deploy": 0.03,
+      "after_deploy": 0.03
+    },
+    {
+      "metric": "payments_svc_cpu_pct",
+      "before_deploy": 33,
+      "after_deploy": 34
+    },
+    {
+      "metric": "gateway_availability_pct_all_routes",
+      "before_deploy": 99.98,
+      "after_deploy": 88.1,
+      "comment": "routes that never call payments-svc are also failing"
+    },
+    {
+      "metric": "gateway_cpu_pct",
+      "before_deploy": 27,
+      "after_deploy": 8
+    }
+  ]
+}
