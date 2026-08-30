@@ -72,7 +72,7 @@ Root-cause correctness is judged by a pinned small model
 
 | metric | baseline | solution |
 | --- | --- | --- |
-| correct root cause | 5/6, then 6/6 on rerun | 6/6 |
+| root-cause pass rate [^1] | 3/5 (60%) | 3/3 scoreable (of 4 attempted) |
 | evidence recall | 83%, then 78% on rerun | 92% |
 | evidence precision | 100% | 100% |
 | red herrings cited | 0/2 | 0/2 |
@@ -80,13 +80,28 @@ Root-cause correctness is judged by a pinned small model
 | API calls per incident | 1 | 7 |
 | cost per 6-incident run | ~$0.11 | ~$1.81 |
 
+[^1]: Repeated runs of incident_03 alone — the one case where the baseline is
+unstable. Every other row is from full six-incident runs.
+
 The honest reading: **the evidence-citation gap is real and the root-cause
-accuracy gap is not established.** Re-running the untouched baseline moved it
-from 5/6 to 6/6 (`CHANGELOG.md` v0.5), so a single run per side cannot separate
-a real improvement from sampling variance — the SDK no longer exposes
-`temperature`, so runs cannot be pinned. What holds across runs is that the
-staged pipeline cites more of the right lines (92% vs. 78–83% recall at equal
-100% precision), at roughly 12x the latency and 16x the cost.
+accuracy gap is not established.** Running incident_03 repeatedly puts the
+baseline at 3/5 and the solution at 3/3 scoreable, but the exact 95% intervals
+are roughly [15%, 95%] and [29%, 100%] — overlapping across nearly their whole
+range, so the difference is not distinguishable at this sample size. Three
+successes cannot separate a better approach from a lucky draw against a
+coin-flip baseline. (The solution's fourth run died on an API credit error and
+its fifth left no result file; `CHANGELOG.md` v0.6 has the per-run detail and
+the full stats.)
+
+Runs are not deterministic, and we never pinned `temperature` to make them so —
+nor could we have with the pinned `anthropic==1.2.0`, whose `messages.create()`
+has no `temperature` parameter at all (passing one raises a client-side
+`TypeError`), and the Messages API exposes no seed. Repeated runs with a
+reported rate are the only available answer.
+
+What holds across runs is that the staged pipeline cites more of the right lines
+(92% vs. 78–83% recall at equal 100% precision), at roughly 12x the latency and
+16x the cost.
 
 **Out of scope for this build.** No live data sources — incidents are static
 files, not queries against a real logging stack. No remediation, only diagnosis.
