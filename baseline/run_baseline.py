@@ -5,9 +5,6 @@ This is the naive approach we are trying to beat. It concatenates all five
 incident files into a single prompt and asks for the root cause in one shot.
 No extraction stage, no verification, no retries, no tools.
 
-FROZEN. Per CLAUDE.md, do not change this file to make the solution look
-better. If it has to change, say so explicitly in CHANGELOG.md.
-
 Usage:
     python baseline/run_baseline.py evals/test_cases/incident_01
 """

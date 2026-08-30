@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-08-30T15:45:38.081065+00:00",
+  "target": "solution",
+  "model": "claude-sonnet-4-6",
+  "model_requested": null,
+  "judge_model": "claude-haiku-4-5",
+  "total": 1,
+  "errors": 1,
+  "correct_root_cause": 0,
+  "judge_fallbacks": 0,
+  "evidence_precision": 0.0,
+  "evidence_recall": 0.0,
+  "evidence_f1": 0.0,
+  "avg_seconds": 0.0,
+  "avg_api_calls": 0.0,
+  "red_herring_cases": 0,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_03",
+      "target": "solution",
+      "status": "error",
+      "elapsed_seconds": 0.351,
+      "error": "BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CeZC7DkSDPkRwv6mcisqv'}",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/ada/micro1_projects/micro1-hackathon/evals/run_eval.py\", line 322, in run_all\n    output = runner(case[\"dir\"], model=model)\n  File \"/Users/ada/micro1_projects/micro1-hackathon/solution/agent.py\", line 454, in run_solution\n    return IncidentAgent(model=model, client=client).investigate(incident_dir)\n  File \"/Users/ada/micro1_projects/micro1-hackathon/solution/agent.py\", line 377, in investigate\n    facts = self.extract(log, incident_id, artifacts)\n  File \"/Users/ada/micro1_projects/micro1-hackathon/solution/agent.py\", line 294, in extract\n    raise first_error\n  File \"/Users/ada/micro1_projects/micro1-hackathon/solution/agent.py\", line 279, in extract\n    result, buf = futures[name].result()\n  File \"/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/concurrent/futures/_base.py\", line 438, in result\n    return self.__get_result()\n  File \"/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/concurrent/futures/_base.py\", line 390, in __get_result\n    raise self._exception\n  File \"/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/concurrent/futures/thread.py\", line 52, in run\n    result = self.fn(*self.args, **self.kwargs)\n  File \"/Users/ada/micro1_projects/micro1-hackathon/solution/agent.py\", line 255, in extract_one\n    result = self._call_json(\n  File \"/Users/ada/micro1_projects/micro1-hackathon/solution/agent.py\", line 194, in _call_json\n    response = self.client.messages.create(\n  File \"/Users/ada/micro1_projects/micro1-hackathon/.venv/lib/python3.10/site-packages/anthropic/_utils/_utils.py\", line 294, in wrapper\n    return func(*args, **kwargs)\n  File \"/Users/ada/micro1_projects/micro1-hackathon/.venv/lib/python3.10/site-packages/anthropic/resources/messages/messages.py\", line 968, in create\n    return self._post(\n  File \"/Users/ada/micro1_projects/micro1-hackathon/.venv/lib/python3.10/site-packages/anthropic/_base_client.py\", line 1490, in post\n    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))\n  File \"/Users/ada/micro1_projects/micro1-hackathon/.venv/lib/python3.10/site-packages/anthropic/_base_client.py\", line 1174, in request\n    raise self._make_status_error_from_response(response) from None\nanthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'}, 'request_id': 'req_011CeZC7DkSDPkRwv6mcisqv'}\n"
+    }
+  ]
+}
