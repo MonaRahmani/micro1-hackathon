@@ -1,0 +1,103 @@
+{
+  "timestamp": "2026-08-29T06:31:19.637093+00:00",
+  "target": "baseline",
+  "model": "claude-sonnet-4-6",
+  "model_requested": null,
+  "judge_model": "claude-haiku-4-5",
+  "total": 1,
+  "errors": 0,
+  "correct_root_cause": 0,
+  "judge_fallbacks": 0,
+  "evidence_precision": 1.0,
+  "evidence_recall": 0.5,
+  "evidence_f1": 0.667,
+  "avg_seconds": 10.477,
+  "avg_api_calls": 1.0,
+  "red_herring_cases": 0,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_03",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 10.477,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2674,
+        "output_tokens": 474
+      },
+      "confidence": 99,
+      "root_cause_actual": "PR #881 raised the payments-svc read timeout from 3s to 30s and disabled the circuit breaker. When partner acquirer latency spiked to 12.4s p99, threads held connections open for up to 30s instead of failing fast at 3s, exhausting the 64-thread shared pool and causing all gateway routes (including those unrelated to payments) to reject requests.",
+      "root_cause_expected": "PR #881 raised the gateway's payments-svc read timeout from 3s to 30s (and disabled the circuit breaker) while the edge load balancer's proxy_read_timeout stayed at 10s. When partner latency rose, the edge cut clients off at 10s with 504s while gateway worker threads stayed pinned on the upstream call for the full 30s, saturating the 64-thread pool and taking down routes that never touch payments-svc.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.326,
+          "token_precision": 0.5,
+          "token_recall": 0.447,
+          "token_f1": 0.472,
+          "would_pass_threshold": true
+        },
+        "correct": false,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": false,
+          "reason": "The reference root cause identifies a mismatch between the 30s gateway timeout and the 10s edge load balancer timeout as the specific mechanism, whereas the candidate omits this critical timeout mismatch and instead describes only the 30s timeout change itself.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 382,
+            "output_tokens": 78
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 8,
+        "predicted_tags": [
+          "client_timeout_raised",
+          "thread_pool_saturation"
+        ],
+        "expected_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "matched_tags": [
+          "client_timeout_raised",
+          "thread_pool_saturation"
+        ],
+        "missed_tags": [
+          "edge_504_surge",
+          "edge_timeout_unchanged"
+        ],
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.667,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "-        .readTimeout(Duration.ofSeconds(3))\n+        .readTimeout(Duration.ofSeconds(30))   // EVIDENCE: client_timeout_raised",
+        "-        if (breaker.isOpen()) {\n-            return AuthResult.degraded(\"payments circuit open\");\n-        }",
+        "2026-08-23T18:51:33.903Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:47:30.660Z WARN  api-gateway upstream payments-svc slow: partner acquirer p99 climbed to 12.4s",
+        "2026-08-23T18:52:10.447Z INFO  api-gateway GET  /v1/orders 504 in 10002ms  (endpoint does not touch payments-svc)",
+        "PAYMENTS_READ_TIMEOUT     3s  -> 30s     # EVIDENCE: client_timeout_raised",
+        "PAYMENTS_CIRCUIT_BREAKER  enabled -> disabled  (breaker tripped too often at 3s)",
+        "Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner\n  degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s."
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_03",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 10.455,
+        "usage": {
+          "input_tokens": 2674,
+          "output_tokens": 474
+        },
+        "stop_reason": "end_turn"
+      }
+    }
+  ]
+}

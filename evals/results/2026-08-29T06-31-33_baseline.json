@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-08-29T06:31:33.451336+00:00",
+  "target": "baseline",
+  "model": "claude-sonnet-4-6",
+  "model_requested": null,
+  "judge_model": "claude-haiku-4-5",
+  "total": 1,
+  "errors": 0,
+  "correct_root_cause": 1,
+  "judge_fallbacks": 0,
+  "evidence_precision": 1.0,
+  "evidence_recall": 1.0,
+  "evidence_f1": 1.0,
+  "avg_seconds": 11.831,
+  "avg_api_calls": 1.0,
+  "red_herring_cases": 0,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_03",
+      "target": "baseline",
+      "status": "ok",
+      "elapsed_seconds": 11.831,
+      "api_calls": 1,
+      "usage": {
+        "input_tokens": 2674,
+        "output_tokens": 535
+      },
+      "confidence": 99,
+      "root_cause_actual": "PR #881 raised the payments-svc read timeout from 3s to 30s and disabled the circuit breaker. When partner acquirer latency spiked to 12.4s p99, gateway threads held connections open for up to 30s (far exceeding the ALB's 10s proxy_read_timeout), exhausting all 64 shared worker threads and causing a thread-pool deadlock that blocked every gateway route—not just payments.",
+      "root_cause_expected": "PR #881 raised the gateway's payments-svc read timeout from 3s to 30s (and disabled the circuit breaker) while the edge load balancer's proxy_read_timeout stayed at 10s. When partner latency rose, the edge cut clients off at 10s with 504s while gateway worker threads stayed pinned on the upstream call for the full 30s, saturating the 64-thread pool and taking down routes that never touch payments-svc.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.288,
+          "token_precision": 0.528,
+          "token_recall": 0.5,
+          "token_f1": 0.514,
+          "would_pass_threshold": true
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: PR #881's increase of the payments-svc timeout to 30s creating a mismatch with the ALB's 10s timeout, causing gateway threads to be held open and exhaust the shared 64-thread pool, blocking all routes.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 392,
+            "output_tokens": 84
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 10,
+        "predicted_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "expected_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "matched_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "missed_tags": [],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "PAYMENTS_READ_TIMEOUT     3s  -> 30s     # EVIDENCE: client_timeout_raised",
+        "PAYMENTS_CIRCUIT_BREAKER  enabled -> disabled  (breaker tripped too often at 3s)",
+        "alb-prod proxy_read_timeout = 10s   # EVIDENCE: edge_timeout_unchanged",
+        "Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner\n  degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s.",
+        "2026-08-23T18:51:33.903Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:48:44.773Z WARN  api-gateway edge returned 504 to client while gateway thread still waiting on payments-svc  # EVIDENCE: edge_504_surge",
+        "2026-08-23T18:52:10.447Z INFO  api-gateway GET  /v1/orders 504 in 10002ms  (endpoint does not touch payments-svc)",
+        "2026-08-23T18:52:58.660Z INFO  api-gateway GET  /v1/catalog 504 in 10001ms  (endpoint does not touch payments-svc)",
+        "+        .readTimeout(Duration.ofSeconds(30))   // EVIDENCE: client_timeout_raised",
+        "        .executor(GatewayThreads.SHARED_POOL)"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "baseline",
+        "incident": "incident_03",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 1,
+        "elapsed_seconds": 11.807,
+        "usage": {
+          "input_tokens": 2674,
+          "output_tokens": 535
+        },
+        "stop_reason": "end_turn"
+      }
+    }
+  ]
+}

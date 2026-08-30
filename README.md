@@ -1,56 +1,135 @@
-# <!-- Project title: short, memorable name of the project --> Project Title
+# AI Incident Investigator
 
-<!--
-Project title section:
-- One line: the name of the project and a one-sentence tagline.
-- What is this thing, in plain language?
--->
+Give it the logs, the deploy record, the metrics, and the diff from a production
+incident; it tells you the root cause and quotes the lines that prove it.
 
 ## Problem statement
 
-<!--
-Problem statement section:
-- Who is the user? Be specific (role, team, context).
-- What is their bottleneck / pain? What do they do today, and why does it hurt?
-- How often does it happen and what does it cost them (time, money, errors)?
-- Why is now the right time to solve it?
--->
+**Who.** The on-call engineer who just got paged — someone facing an active outage, a rapidly filling Slack channel, and an incident commander asking what changed.
+
+**The bottleneck.** The evidence exists, but it is scattered across five places
+that do not talk to each other: an application log, an error log, a deployment
+record, a metrics dashboard, and the diff that shipped. Finding the cause means
+holding all five in your head at once and correlating *across* them — noticing
+that a value in the deploy record is in the wrong relationship to a value in a
+config file nobody touched. That is the expensive part, and it is exactly the
+part that degrades under time pressure.
+
+**What it costs.** Two things, and the second is worse. The obvious cost is
+minutes of downtime while someone reads. The real cost is a *confident wrong
+answer*: a release that ships several changes at once offers a loud, suspicious
+candidate and a quiet, connected one, and the loud one gets blamed. Then the
+rollback doesn't fix it, and you have burned the outage window on the wrong
+theory. Two of the six incidents in this repo's eval set are built exactly this
+way — a real cause shipped alongside a plausible red herring (an `httpx`
+migration; a Kafka consumer-group rename).
+
+**Why this is tractable now.** The correlation work is reading and
+cross-referencing bounded text — what a language model is good at. The risk is
+that it is also good at producing a fluent wrong answer, which is why this
+project is built around an eval harness rather than a demo.
 
 ## Solution overview
 
-<!--
-Solution overview section:
-- What did you build? One paragraph, no jargon.
-- How does it work at a high level (inputs -> what happens -> outputs)?
-- What is the key insight or bet that makes this work?
-- What is explicitly out of scope for the hackathon build?
--->
+A baseline and a structured alternative, measured against each other on six
+synthetic incidents with known causes.
+
+**Baseline** (`baseline/run_baseline.py`, frozen): concatenate all five
+artifacts into one prompt, one API call, ask for the root cause. This is what
+most people would build first.
+
+**Solution** (`solution/agent.py`): four stages, seven API calls per incident.
+
+1. **Extract** (`solution/prompts/extract.md`) — one call per artifact, all five
+   run concurrently. Each returns structured `facts[]`, where every fact carries
+   the source `line` copied verbatim, a `kind` (`error`, `config_change`,
+   `metric`, `unchanged`, ...), a timestamp, and the entities named. It is told
+   not to diagnose — including facts about what did *not* change, which is how
+   the later stages rule candidates out.
+2. **Hypothesize** (`solution/prompts/hypothesize.md`) — one call over all
+   facts. Returns a `root_cause`, the `mechanism` as an explicit causal chain,
+   `supporting_facts`, `ruled_out` candidates with the fact that eliminates
+   each, a `confidence`, and `what_would_disprove_this`.
+3. **Verify** (`solution/prompts/verify.md`) — one call against the *raw*
+   artifacts, not the summary of them. Checks that every cited line exists
+   verbatim, and enumerates `cross_file_value_checks`: every timeout, limit,
+   pool size, TTL, and threshold across all five files, each pair that governs
+   the same resource marked `relationship_ok` true or false. It can `confirm`,
+   `revise`, or `reject`; a rejection re-runs hypothesize once with the
+   critique.
+4. **Report** — same JSON shape as the baseline (`root_cause`, `evidence`,
+   `confidence`) so the comparison is fair, with the stage detail preserved in
+   `_meta`.
+
+**Grading.** Evidence lines in the test artifacts carry inline
+`# EVIDENCE: <tag>` markers, so evidence scoring is exact tag matching with no
+model's opinion in it. Red herrings carry `# NOISE:` and are counted separately.
+Root-cause correctness is judged by a pinned small model
+(`claude-haiku-4-5`) that sees only the two strings and records its reason.
+
+**What the evidence shows** (full runs, `claude-sonnet-4-6`, results in
+`evals/results/`):
+
+| metric | baseline | solution |
+| --- | --- | --- |
+| correct root cause | 5/6, then 6/6 on rerun | 6/6 |
+| evidence recall | 83%, then 78% on rerun | 92% |
+| evidence precision | 100% | 100% |
+| red herrings cited | 0/2 | 0/2 |
+| avg time per incident | ~10.9s | ~126s |
+| API calls per incident | 1 | 7 |
+| cost per 6-incident run | ~$0.11 | ~$1.81 |
+
+The honest reading: **the evidence-citation gap is real and the root-cause
+accuracy gap is not established.** Re-running the untouched baseline moved it
+from 5/6 to 6/6 (`CHANGELOG.md` v0.5), so a single run per side cannot separate
+a real improvement from sampling variance — the SDK no longer exposes
+`temperature`, so runs cannot be pinned. What holds across runs is that the
+staged pipeline cites more of the right lines (92% vs. 78–83% recall at equal
+100% precision), at roughly 12x the latency and 16x the cost.
+
+**Out of scope for this build.** No live data sources — incidents are static
+files, not queries against a real logging stack. No remediation, only diagnosis.
+No multi-incident correlation or alert triage. No UI. Six synthetic incidents,
+each with exactly one findable cause, which is a friendlier world than
+production.
 
 ## Coding agents used (disclosure)
 
-<!--
-Disclosure section:
-- List every coding agent / AI tool used (e.g. Claude Code, Cursor, etc.), with versions/models if known.
-- What did each one do? (scaffolding, baseline, solution iteration, evals, docs)
-- Roughly how much of the work was agent-driven vs. hand-written?
-- Link to trajectory logs in trajectories/ for the solution-agent runs.
--->
+**Claude Code** powered by Opus 5 as the driving model; the pipeline under test runs claude-sonnet-4-6 with claude-haiku-4-5 as the grader.
+
+Trajectories:
+
+- `trajectories/solution-agent/incident_01.md` … `incident_06.md` — full
+  rendered transcripts of the solution agent's four stages for all six
+  incidents: every prompt sent, every response, every retry. Raw `.jsonl` is
+  gitignored per `CLAUDE.md`; the rendered Markdown is committed.
+- `trajectories/coding-agent/full-session.md` — the Claude Code session that built the repo.
 
 ## How to run
 
-<!--
-How to run section:
-- Keep this short. Point to REPRODUCE.md for the full, clean-clone instructions.
-- Optionally: the single fastest command to see something working.
--->
+See **[REPRODUCE.md](REPRODUCE.md)** for setup from a clean clone, every
+command, expected output, and measured runtime and cost.
 
-See [REPRODUCE.md](REPRODUCE.md) for full setup and run instructions from a clean clone.
+Fastest check that a clone is intact, costing nothing:
+
+```bash
+python evals/run_eval.py --dry-run     # validates all 6 incidents, no API calls
+```
 
 ## Hot take / insights
 
-<!--
-Hot take / insights section:
-- The one opinion you'd defend: what did this project teach you that others might disagree with?
-- What surprised you? What did the evidence (CHANGELOG.md) actually show vs. what you expected?
-- What would you do next with another week?
--->
+**Single-run pass/fail accuracy is a vanity metric; evidence recall is the number worth trusting.**
+Benchmarking an LLM agent once and calling it "100% correct" is mostly
+sampling noise, not a validated result. Our baseline scored 5/6 root causes
+on one run and 6/6 on an identical rerun — no code, prompt, or model changed
+between them. That single flip would have quietly reversed our headline if
+we hadn't caught it.
+Evidence recall moved too (baseline: 78–83% across the two runs) — so recall
+isn't noise-free either. But even at baseline's *best* showing, it never
+touched the solution's 92%, at the same 100% precision. That's the real
+story: an SRE doesn't need the model to get lucky on a root-cause guess, they
+need to know *why* it's right, with citations they can check in seconds — like
+surfacing the exact mismatch between a 30s gateway timeout and a 10s ALB
+timeout in incident_03. That evidence trail is what a multi-stage agent
+actually buys you, and it holds up regardless of which run you happened to catch.

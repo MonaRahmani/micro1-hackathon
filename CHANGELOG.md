@@ -2,22 +2,67 @@
 
 ## The arc
 
-<!--
-"The arc" summary:
-- 3-6 sentences telling the story of how the solution evolved.
-- Start state -> key turning points -> end state.
-- Written last, updated as the project progresses. This is the narrative a judge reads first.
--->
-
-_(placeholder — fill in the arc of the project here once there are real entries below)_
+We began by establishing a frozen 1-call baseline concatenating all incident artifacts, alongside a 6-incident evaluation harness graded by a pinned LLM judge (`claude-haiku-4-5`). To improve extraction depth and auditability, we built a 4-stage multi-agent pipeline (`Extract` -> `Hypothesize` -> `Verify` -> `Report`), parallelizing extraction to cut execution latency by 35%. Early runs suggested a root-cause accuracy lead over the baseline (6/6 vs 5/6), but clean-environment reruns revealed sampling variance in single-pass LLM accuracy (baseline scored 6/6 on rerun). What proved consistently superior was evidence recall the multi-stage agent achieves 92% recall versus 78–83% for the baseline at 100% precision, demonstrating that agentic pipelines excel at rigorous evidence gathering rather than single guess accuracy.
 
 ---
 
-<!--
-ENTRY FORMAT (delete the EXAMPLE entry below once you have real ones):
-Each entry is one meaningful change. Newest at the top, under "The arc".
-Every entry must be evidence-based: no "felt faster", only measured results.
--->
+## v0.6 — "The baseline flips a coin on incident_03: 3/5"
+
+**What I saw (evidence):**
+v0.5 established that the untouched baseline scored 5/6 on one run and 6/6 on
+another, and closed by asking how many runs it takes to say anything at all
+about root-cause accuracy. This entry answers that with a rate instead of a
+verdict. Nine single-incident runs of incident_03, five baseline and four
+solution, in `evals/results/2026-08-29T06-31-07` through `...T06-38-48`.
+
+**What I changed:**
+Nothing in `baseline/`, `solution/`, `evals/`, or any prompt. This is
+measurement only.
+
+**What happened (measured result):**
+
+| target | pass rate | per-run correctness | per-run evidence recall |
+| ------ | --------- | ------------------- | ----------------------- |
+| baseline | **3/5 (60%)** | False, False, True, True, True | 0.50, 0.50, 1.00, 1.00, 0.75 |
+| solution | **3/3 scoreable** | True, True, True | 1.00, 0.75, 1.00 |
+
+**The baseline genuinely flips a coin on incident_03.** Identical input,
+identical model, identical prompt, 60% pass. That fully explains the v0.3/v0.4
+5/6 and the v0.5 6/6 — they were two draws from the same distribution, not a
+change in capability. Evidence recall on the baseline is just as unstable,
+swinging 0.50 to 1.00 across the same five runs.
+
+**The solution side is 3 runs, not 5 — say it plainly.** Run 4 died on
+`BadRequestError: 400 — Your credit balance is too low to access the Anthropic
+API`. Run 5 left no result file and no trajectory write at all (the agent
+unlinks and recreates its `.jsonl` as its first action, and
+`incident_03.jsonl` still carries run 4's timestamp), so it failed before the
+agent began logging. The cause is **not determined** — the run loop filtered
+stderr, so the traceback was lost. It is not counted as a pass or a failure.
+
+**What this does and does not establish.** 3/3 against 3/5 is not a
+distinguishable difference. Exact binomial 95% intervals are roughly
+[29%, 100%] for the solution and [15%, 95%] for the baseline; they overlap
+across almost their whole range. Three successes cannot separate a genuinely
+better approach from a lucky draw against a coin-flip baseline. What v0.6 does
+settle is the *baseline's* instability, which is what v0.5 needed and now has.
+The solution's own rate remains unmeasured at any useful precision.
+
+This also retires the idea of fixing variance at the source: `temperature`,
+`top_p`, and `top_k` were removed from `messages.create()` in
+`anthropic==1.2.0` — passing one is a `TypeError`, not a model-specific 400, so
+there is no sampling knob to pin and no seed on the Messages API. Repeated runs
+with a reported rate are the only available answer.
+
+**Next question:**
+The solution needs the same five-run treatment before any accuracy claim is
+defensible — roughly $0.60 of credit for the two missing runs, more if the goal
+is a rate tight enough to compare. Worth deciding first whether incident_03 is
+even the right case to spend on: it is the only one of the six where the
+baseline is unstable, so it is the most informative, but a rate measured on the
+hardest case does not generalize to the other five.
+
+---
 
 ## v0.5 — "A rerun of the untouched baseline scores 6/6, which puts v0.4's headline in doubt"
 
@@ -339,26 +384,3 @@ Grading assumes the model quotes log lines *with* their trailing
 symmetric across baseline and solution — but if recall comes back near zero for
 both, that's a citation-format artifact, not a reasoning failure. First real run
 should check the raw `evidence` arrays before believing the score.
-
----
-
-## [EXAMPLE — DELETE THIS ENTRY] v0.1 — "First real prompt for the extraction step"
-
-**What I saw (evidence):**
-Baseline scored 4/10 on the eval harness. Reviewing the 6 failures, 5 of them
-were the model returning prose instead of JSON, and 1 was a wrong field value.
-Logs: `evals/results/2026-08-27T09-12-00.json`.
-
-**What I changed:**
-Rewrote `solution/prompts/extract.md` to (a) show two few-shot examples of the
-exact JSON shape, and (b) add a "respond with JSON only, no preamble" system line.
-No code changes.
-
-**What happened (measured result):**
-Eval harness went from 4/10 to 8/10. All 5 prose-instead-of-JSON failures now
-pass. The 1 wrong-field-value case still fails. Runtime unchanged (~45s for 10
-cases). Results: `evals/results/2026-08-27T11-40-00.json`.
-
-**Next question:**
-Is the remaining failure a prompt problem or a genuinely ambiguous test case?
-Need to look at whether a human would agree on the expected value.

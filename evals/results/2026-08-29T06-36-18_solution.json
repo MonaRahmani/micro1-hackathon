@@ -1,0 +1,244 @@
+{
+  "timestamp": "2026-08-29T06:36:18.609653+00:00",
+  "target": "solution",
+  "model": "claude-sonnet-4-6",
+  "model_requested": null,
+  "judge_model": "claude-haiku-4-5",
+  "total": 1,
+  "errors": 0,
+  "correct_root_cause": 1,
+  "judge_fallbacks": 0,
+  "evidence_precision": 1.0,
+  "evidence_recall": 0.75,
+  "evidence_f1": 0.857,
+  "avg_seconds": 126.768,
+  "avg_api_calls": 7.0,
+  "red_herring_cases": 0,
+  "red_herring_cases_contaminated": 0,
+  "results": [
+    {
+      "id": "incident_03",
+      "target": "solution",
+      "status": "ok",
+      "elapsed_seconds": 126.768,
+      "api_calls": 7,
+      "usage": {
+        "input_tokens": 21701,
+        "output_tokens": 14972
+      },
+      "confidence": 97,
+      "root_cause_actual": "PR #881 (api-gateway v9.2.0) simultaneously raised the payments-svc read timeout from 3s to 30s and disabled the circuit breaker, removing both fast-fail protections. When the partner acquirer p99 latency rose to 12.4s at 18:47Z (a pre-existing degradation), each payment request now held a gateway worker thread for up to ~30s instead of failing fast at 3s. The critical value mismatch is that the ALB proxy_read_timeout remained at 10s while the gateway upstream read timeout was now 30s: the ALB killed the client-facing connection at 10s, but the gateway thread continued blocking on the upstream connection for the full ~30s (observed 29.9s). With a fixed pool of only 64 worker threads and each thread held ~30s, incoming payment requests accumulated faster than threads could be freed, driving threads_busy from 9 to 64/64 and the accept queue to 611. With all threads blocked in PaymentsClient.execute(), routes with no dependency on payments-svc (/v1/orders, /v1/catalog) also began returning 504 due to thread starvation, dropping overall gateway availability to 88.1% and generating 4180 ALB 504s in one minute.",
+      "root_cause_expected": "PR #881 raised the gateway's payments-svc read timeout from 3s to 30s (and disabled the circuit breaker) while the edge load balancer's proxy_read_timeout stayed at 10s. When partner latency rose, the edge cut clients off at 10s with 504s while gateway worker threads stayed pinned on the upstream call for the full 30s, saturating the 64-thread pool and taking down routes that never touch payments-svc.",
+      "root_cause_score": {
+        "similarity": {
+          "sequence_ratio": 0.167,
+          "token_precision": 0.27,
+          "token_recall": 0.632,
+          "token_f1": 0.378,
+          "would_pass_threshold": false
+        },
+        "correct": true,
+        "verdict_source": "judge",
+        "judge": {
+          "correct": true,
+          "reason": "Both identify the same underlying cause: PR #881's mismatch between the gateway's 30s read timeout and the ALB's 10s proxy_read_timeout, combined with disabling the circuit breaker, which caused worker thread starvation when partner latency increased.",
+          "model": "claude-haiku-4-5",
+          "usage": {
+            "input_tokens": 589,
+            "output_tokens": 77
+          }
+        }
+      },
+      "evidence_score": {
+        "cited_count": 17,
+        "predicted_tags": [
+          "client_timeout_raised",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "expected_tags": [
+          "client_timeout_raised",
+          "edge_504_surge",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "matched_tags": [
+          "client_timeout_raised",
+          "edge_timeout_unchanged",
+          "thread_pool_saturation"
+        ],
+        "missed_tags": [
+          "edge_504_surge"
+        ],
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857,
+        "red_herring_tags_cited": [],
+        "red_herring_cited": false
+      },
+      "evidence_cited": [
+        "-        .readTimeout(Duration.ofSeconds(3))",
+        "+        .readTimeout(Duration.ofSeconds(30))   // EVIDENCE: client_timeout_raised",
+        "-        if (breaker.isOpen()) {",
+        "-            return AuthResult.degraded(\"payments circuit open\");",
+        "+    circuitBreaker: disabled",
+        "-    circuitBreaker: enabled",
+        "2026-08-23T18:40:03.551Z INFO  api-gateway edge alb-prod proxy_read_timeout=10s (unchanged this release)  # EVIDENCE: edge_timeout_unchanged",
+        "2026-08-23T18:47:30.660Z WARN  api-gateway upstream payments-svc slow: partner acquirer p99 climbed to 12.4s",
+        "2026-08-23T18:49:12.004Z ERROR api-gateway java.io.IOException: Broken pipe writing response (client already disconnected), request held upstream 29.9s of 30s read timeout  # EVIDENCE: client_timeout_raised",
+        "2026-08-23T18:51:33.903Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()  # EVIDENCE: thread_pool_saturation",
+        "2026-08-23T18:52:10.448Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s route=/v1/orders",
+        "2026-08-23T18:52:58.661Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s route=/v1/catalog",
+        "PAYMENTS_READ_TIMEOUT     3s  -> 30s     # EVIDENCE: client_timeout_raised",
+        "PAYMENTS_CIRCUIT_BREAKER  enabled -> disabled  (breaker tripped too often at 3s)",
+        "  alb-prod proxy_read_timeout = 10s   # EVIDENCE: edge_timeout_unchanged",
+        "Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner\n  degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s.",
+        "GATEWAY_WORKER_THREADS    64  -> 64      (unchanged)"
+      ],
+      "has_red_herring": false,
+      "meta": {
+        "target": "solution",
+        "incident": "incident_03",
+        "model": "claude-sonnet-4-6",
+        "api_calls": 7,
+        "elapsed_seconds": 126.737,
+        "usage": {
+          "input_tokens": 21701,
+          "output_tokens": 14972
+        },
+        "verdict": "confirmed",
+        "rehypothesis_rounds": 0,
+        "mechanism": [
+          "Partner acquirer p99 latency rose to 12.4s at 18:47Z (pre-existing degradation, ticket ACQ-3391)",
+          "Under v9.1.7, the 3s read timeout plus enabled circuit breaker caused these calls to fail fast, preventing thread accumulation",
+          "PR #881 in v9.2.0 raised PAYMENTS_READ_TIMEOUT from 3s to 30s and disabled the circuit breaker, removing both fast-fail protections",
+          "With the 30s timeout, each slow payment call holds a gateway worker thread for up to ~30s instead of ~3s",
+          "The ALB proxy_read_timeout remained at 10s; ALB drops the client connection at 10s, but the gateway thread continues waiting on payments-svc for up to 30s (observed: 29.9s)",
+          "Incoming payment requests at normal traffic rate accumulated faster than threads could free, driving threads_busy from 9 to 64/64",
+          "With all 64 worker threads blocked in PaymentsClient.execute(), the accept queue grew to 611; the thread pool could not accept any new request regardless of route",
+          "Routes with no dependency on payments-svc (/v1/orders, /v1/catalog) began returning 504 due to thread starvation, not payments-svc failure",
+          "Gateway availability dropped to 88.1% across all routes; 4180 ALB 504s recorded in one minute"
+        ],
+        "ruled_out": [
+          {
+            "candidate": "Partner acquirer latency degradation (ACQ-3391) as the root cause",
+            "why_not": "The partner degradation is a pre-existing condition; under v9.1.7 with a 3s timeout and enabled circuit breaker, calls failed fast and caused no incident. The degradation only became an incident-causing factor because v9.2.0 removed both fast-fail mechanisms."
+          },
+          {
+            "candidate": "payments-svc itself being unhealthy or failing",
+            "why_not": "payments-svc reported healthy throughout: 5xx rate 0.03%, CPU 34%, no deploy since 2026-08-15. Thread saturation was observed in PaymentsClient (gateway-side client), and /v1/orders and /v1/catalog failed despite never calling payments-svc."
+          },
+          {
+            "candidate": "Traffic volume spike overwhelming the thread pool",
+            "why_not": "Notable absence explicitly states 'No indication of traffic volume spike; thread exhaustion appears driven by held connections, not request rate surge.' Gateway CPU also dropped to 8% post-deploy despite thread saturation, indicating threads are idle-waiting, not CPU-bound."
+          },
+          {
+            "candidate": "ALB proxy_read_timeout (10s) being the root cause change",
+            "why_not": "The ALB timeout has been 10s since 2024 and was explicitly not changed by PR #881. It is a contributing factor to the mismatch but not itself a new change that caused the incident."
+          }
+        ],
+        "red_herrings": [
+          {
+            "candidate": "payments-svc itself being unhealthy or failing",
+            "why_not": "2026-08-23T18:56:02.339Z INFO  api-gateway payments-svc itself: 5xx rate 0.03%, cpu 34%, healthy — payments-svc remained healthy throughout; the problem was entirely on the gateway-side thread pool."
+          },
+          {
+            "candidate": "Traffic volume spike overwhelming the thread pool",
+            "why_not": "gateway_cpu_pct dropped from 27% to 8% after deploy (metrics.json), indicating threads are idle-waiting on I/O, not CPU-bound from high request volume. The deploy record and artifacts contain no mention of a traffic spike."
+          },
+          {
+            "candidate": "Partner acquirer latency degradation (ACQ-3391) alone as root cause",
+            "why_not": "Partner acquirer latency p99 rose from 1.9s to 12.4s at 18:47Z (known partner degradation, ticket ACQ-3391). Under v9.1.7 these calls failed fast at 3s — confirming the degradation was pre-existing and only became incident-causing because PR #881 removed both fast-fail mechanisms."
+          },
+          {
+            "candidate": "ALB proxy_read_timeout (10s) being the root cause change",
+            "why_not": "alb-prod proxy_read_timeout = 10s — This value has been 10s since 2024 and was not touched by PR #881. It is an unchanged value that forms the mismatched pair with the newly raised 30s upstream timeout, but it is not itself the change that caused the incident."
+          }
+        ],
+        "cross_file_value_checks": [
+          {
+            "values": [
+              "PAYMENTS_READ_TIMEOUT = 30s (deployment.txt / recent_changes.diff)",
+              "alb-prod proxy_read_timeout = 10s (deployment.txt / application.log)"
+            ],
+            "governs": "client-facing connection lifetime vs. gateway upstream hold time on payment calls",
+            "relationship_ok": false,
+            "note": "ALB drops the client connection at 10s, but the gateway thread continues holding the upstream payments-svc connection for up to 30s. The thread is consumed for ~30s despite the client already being gone, enabling thread accumulation."
+          },
+          {
+            "values": [
+              "GATEWAY_WORKER_THREADS = 64 (deployment.txt / metrics.json)",
+              "upstream_payments_call_duration_p99_s after_deploy = 29.9s (metrics.json)"
+            ],
+            "governs": "thread pool capacity vs. per-request hold duration under degraded acquirer conditions",
+            "relationship_ok": false,
+            "note": "With each payment thread held ~30s and a fixed pool of 64 threads, even modest payment request rates saturate the pool. At p99=29.9s, the pool drains in seconds of sustained traffic."
+          },
+          {
+            "values": [
+              "PAYMENTS_READ_TIMEOUT = 30s (deployment.txt)",
+              "partner acquirer p99 = 12.4s at 18:47Z (application.log / deployment.txt)"
+            ],
+            "governs": "whether payment calls fail fast or block threads on slow acquirer responses",
+            "relationship_ok": false,
+            "note": "30s timeout is far above the 12.4s acquirer p99, so calls do not time out quickly. Under v9.1.7 the 3s timeout was below the degraded p99 (12.4s), causing fast failure rather than thread accumulation."
+          },
+          {
+            "values": [
+              "PAYMENTS_READ_TIMEOUT (old) = 3s (recent_changes.diff)",
+              "partner acquirer p99 (degraded) = 12.4s (application.log)"
+            ],
+            "governs": "fast-fail behaviour of gateway under acquirer degradation before PR #881",
+            "relationship_ok": true,
+            "note": "3s < 12.4s, so pre-deploy the timeout fired before the acquirer responded, failing fast and preventing thread accumulation. This confirms the old config protected against the acquirer degradation scenario."
+          },
+          {
+            "values": [
+              "gateway_accept_queue_depth after_deploy = 611 (metrics.json)",
+              "gateway_worker_threads_busy capacity = 64, after_deploy = 64 (metrics.json)"
+            ],
+            "governs": "request backlog once all worker threads are saturated",
+            "relationship_ok": false,
+            "note": "All 64 threads blocked; 611 requests queued. The queue continues to grow because no threads are available to drain it, affecting all routes including those with no dependency on payments-svc."
+          },
+          {
+            "values": [
+              "PAYMENTS_CIRCUIT_BREAKER = disabled (deployment.txt / recent_changes.diff)",
+              "PAYMENTS_CIRCUIT_BREAKER = enabled (v9.1.7, deployment.txt)"
+            ],
+            "governs": "second fast-fail protection removed alongside timeout increase",
+            "relationship_ok": false,
+            "note": "Disabling the circuit breaker removed the only remaining fast-fail mechanism after the timeout was raised to 30s, leaving no protection against sustained acquirer latency."
+          }
+        ],
+        "dropped_citations": [
+          "2026-08-23T18:49:12.004Z ERROR api-gateway java.io.IOException: Broken pipe writing response (client already disconnected), request held upstream 29.9s of 30s read timeout  # EVIDENCE: client_timeout_raised"
+        ],
+        "added_evidence": [
+          "2026-08-23T18:40:03.550Z INFO  api-gateway upstream payments-svc client configured connect=1s read=30s (was read=3s)  # EVIDENCE: client_timeout_raised",
+          "2026-08-23T18:48:05.221Z INFO  api-gateway POST /v1/payments 200 in 12380ms threads_busy=29",
+          "2026-08-23T18:49:12.005Z INFO  api-gateway POST /v1/payments (client gone) upstream still open for 29.9s  # EVIDENCE: client_timeout_raised",
+          "2026-08-23T18:50:40.118Z WARN  api-gateway threads_busy=58/64 (91%)",
+          "2026-08-23T18:51:33.902Z WARN  api-gateway threads_busy=64/64 (100%) accept queue depth=214  # EVIDENCE: thread_pool_saturation",
+          "2026-08-23T18:54:20.771Z WARN  api-gateway threads_busy=64/64 (100%) accept queue depth=611  # EVIDENCE: thread_pool_saturation",
+          "2026-08-23T18:56:02.339Z INFO  api-gateway payments-svc itself: 5xx rate 0.03%, cpu 34%, healthy",
+          "2026-08-23T18:52:10.447Z INFO  api-gateway GET  /v1/orders 504 in 10002ms  (endpoint does not touch payments-svc)",
+          "2026-08-23T18:52:58.660Z INFO  api-gateway GET  /v1/catalog 504 in 10001ms  (endpoint does not touch payments-svc)",
+          "2026-08-23T18:58:44.118Z WARN  api-gateway edge alb-prod 504 count last 1m = 4180  # EVIDENCE: edge_504_surge",
+          "2026-08-23T19:01:07.550Z INFO  api-gateway oncall paged: gateway availability < 90% across ALL routes",
+          "2026-08-23T18:48:44.773Z WARN  api-gateway edge returned 504 to client while gateway thread still waiting on payments-svc  # EVIDENCE: edge_504_surge",
+          "2026-08-23T18:55:41.220Z ERROR api-gateway RejectedExecutionException: request queue full, 64/64 worker threads blocked in PaymentsClient.execute()",
+          "2026-08-23T18:48:44.772Z ERROR alb-prod HTTPCode_ELB_504_Count target=api-gateway elapsed=10.000s target_status=- (target had not responded)  # EVIDENCE: edge_504_surge",
+          "{\"metric\": \"gateway_cpu_pct\", \"before_deploy\": 27, \"after_deploy\": 8}",
+          "{\"metric\": \"gateway_availability_pct_all_routes\", \"before_deploy\": 99.98, \"after_deploy\": 88.1, \"comment\": \"routes that never call payments-svc are also failing\"}",
+          "{\"metric\": \"upstream_payments_call_duration_p99_s\", \"before_deploy\": 2.9, \"after_deploy\": 29.9, \"note\": \"EVIDENCE: client_timeout_raised\"}",
+          "payments-svc: healthy. 5xx rate 0.03%, cpu 34%, no deploy since 2026-08-15.",
+          "# NOTE: edge/alb-prod.tf is NOT touched by this PR.\n# alb-prod currently has proxy_read_timeout = 10  # EVIDENCE: edge_timeout_unchanged"
+        ],
+        "unresolved": "The exact payment request arrival rate during the incident window is not quantified in the artifacts, so the precise time-to-saturation cannot be calculated independently. However, the thread saturation progression (threads_busy=9 → 29 → 58 → 64/64 between 18:40Z and 18:51Z) is fully documented and the causal chain is complete without this value.",
+        "trajectory_jsonl": "trajectories/solution-agent/incident_03.jsonl",
+        "trajectory_md": "trajectories/solution-agent/incident_03.md"
+      }
+    }
+  ]
+}
