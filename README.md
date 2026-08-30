@@ -3,6 +3,10 @@
 Give it the logs, the deploy record, the metrics, and the diff from a production
 incident; it tells you the root cause and quotes the lines that prove it.
 
+## Solution video
+
+[Watch the 5-minute walkthrough](https://youtu.be/dXq5fqrXyQk)
+
 ## Problem statement
 
 **Who.** The on-call engineer who just got paged — someone facing an active outage, a rapidly filling Slack channel, and an incident commander asking what changed.
